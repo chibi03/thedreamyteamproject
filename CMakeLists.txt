@@ -5,8 +5,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # general setup
-# TODO: insert your group number here
-set(GROUP_NUMBER "00")
+set(GROUP_NUMBER "06")
 
 project(its2018 C CXX)
 enable_testing()
