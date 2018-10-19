@@ -1,24 +1,30 @@
 #include "random.h"
 #include <iostream>
 #include <fstream>
-#include <string.h>
+#include <cstring>
+#include <string>
 
-
+using namespace std;
 using std::ios;
 
 bool get_random_data(uint8_t* data, std::size_t size)
 {
-  std::ifstream randomstream;
-  randomstream.open("/dev/urandom", ios::in);
-  if(randomstream.is_open()){
-      char * buffer = new char[size];
-      randomstream.read(buffer, size);
-      randomstream.close();
+    ifstream randomstream;
+    string filename = "/dev/urandom";
 
-      memcpy(data, buffer, size);
-  } else {
-      return false;
-  }
+    randomstream.open(filename, ios::in);
+    if(randomstream.is_open()){
+        char * buffer = new char[size];
+        randomstream.read(buffer, size);
+        randomstream.close();
 
-  return true;
+        memcpy(data, buffer, size);
+    }
+
+    if (randomstream.fail()) {
+        cout << "Failed to open " + filename + "! File may not exist." << endl;
+        return false;
+    }
+
+    return true;
 }
