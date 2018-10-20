@@ -10,8 +10,12 @@
 // The upper n - 8 bytes are fixed and the only thing that
 // changes are the lower 8 bytes, which are a counter xored
 // with some initial value
-class incrementing_nonce
-{
+class incrementing_nonce {
+
+private:
+	std::vector<uint8_t> nonce_data;
+	uint64_t counter;
+
 public:
   /// Initialize the nonce with given bytes.
   incrementing_nonce(const std::vector<uint8_t>& bytes);
