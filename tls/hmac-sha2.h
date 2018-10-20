@@ -28,6 +28,12 @@
 /// \endcode
 class hmac_sha2
 {
+private:
+  uint8_t ipad[sha2::block_size];
+  uint8_t opad[sha2::block_size];
+
+  sha2 header;
+
 public:
   /// Size (in bytes) of the digest.
   static constexpr std::size_t digest_size = sha2::digest_size;
