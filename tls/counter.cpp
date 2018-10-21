@@ -6,7 +6,7 @@ incrementing_nonce::incrementing_nonce(const std::vector<uint8_t>& bytes) {
 	for (unsigned int i = 0; i < bytes.size(); i++) {
 		this.nonce_data.push_back(bytes[i]);
 	}
-	this.counter = 0;
+	this.internal_counter = 0;
 }
 
 incrementing_nonce& incrementing_nonce::operator++() {
@@ -19,9 +19,9 @@ incrementing_nonce& incrementing_nonce::operator++() {
 						(this.nonce_data[this.nonce_data.size() - 2] << 8) |
 						(this.nonce_data[this.nonce_data.size() - 1]);
 	counter++;
-	this.counter++;
+	this.internal_counter++;
 	
-	std::std::vector<uint8_t> tmp = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+	uint8_t* tmp = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
 										0x00, 0x00};
 	std::memcpy(tmp, &counter, sizeof counter);
 
@@ -40,9 +40,10 @@ void incrementing_nonce::reset(const std::vector<uint8_t>& bytes) {
 						(this.nonce_data[this.nonce_data.size() - 3] << 16) |
 						(this.nonce_data[this.nonce_data.size() - 2] << 8) |
 						(this.nonce_data[this.nonce_data.size() - 1]);
-	counter -= this.counter;
+	counter -= this.internal_counter;
+	this.internal_counter = 0;
 
-	std::std::vector<uint8_t> tmp = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+	uint8_t* tmp = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
 										0x00, 0x00};
 	std::memcpy(tmp, &counter, sizeof counter);
 
