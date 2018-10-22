@@ -10,8 +10,12 @@
 /// ASCON with 128 bit keys and 128 bit nonces.
 class ascon128 : public basic_ae<CRYPTO_KEYBYTES, CRYPTO_ABYTES>
 {
+
+
 public:
   static constexpr std::size_t nonce_size = CRYPTO_NPUBBYTES;
+  basic_ae<CRYPTO_KEYBYTES, CRYPTO_ABYTES>::key_storage key;
+
 
   /// Initialize Object
   ascon128();
