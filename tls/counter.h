@@ -14,6 +14,7 @@ class incrementing_nonce {
 
 private:
 	std::vector<uint8_t> nonce_data;
+	std::vector<uint8_t> init_nonce_data;
 	uint64_t internal_counter;
 
 public:
@@ -27,7 +28,7 @@ public:
   void reset(const std::vector<uint8_t>& bytes);
 
   /// Return a copy of the current nonce.
-  const std::vector<uint8_t>& nonce();
+  const std::vector<uint8_t> nonce();
 };
 
 #endif
