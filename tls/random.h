@@ -11,5 +11,6 @@
 /// @param size size of buffer
 /// @return true on success, false otherwise
 bool get_random_data(uint8_t* data, std::size_t size);
+bool sufficient_entropy();
 
 #endif

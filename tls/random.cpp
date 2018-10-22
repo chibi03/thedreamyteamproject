@@ -4,16 +4,14 @@
 #include <cstring>
 #include <string>
 
-using namespace std;
-using std::ios;
-
 bool get_random_data(uint8_t* data, std::size_t size)
 {
     if (size) {
-        ifstream randomstream;
-        string filename = "/dev/urandom";
+        sufficient_entropy();
+        std::ifstream randomstream;
+        std::string filename = "/dev/urandom";
 
-        randomstream.open(filename, ios::in);
+        randomstream.open(filename, std::ios::in);
         if (randomstream.is_open()) {
             char *buffer = new char[size]; //HELP! memory leak!
             randomstream.read(buffer, size);
@@ -23,11 +21,25 @@ bool get_random_data(uint8_t* data, std::size_t size)
         }
 
         if (randomstream.fail()) {
-            cout << "Failed to open " << filename << "! File may not exist." << endl;
+            std::cout << "Failed to open " << filename << "! File may not exist." << std::endl;
             return false;
         }
 
         return true;
     }
     return false;
+}
+
+bool sufficient_entropy(){
+    std::ifstream available_file("/proc/sys/kernel/random/entropy_avail");
+    char first_line[256];
+
+    if (available_file.good())
+    {
+        available_file.getline(first_line, 256);
+    }
+
+    available_file.close();
+    std::cout << first_line  << " amount of entropy";
+    return true;
 }
