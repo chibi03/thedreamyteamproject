@@ -16,7 +16,7 @@ bool get_random_data(uint8_t *data, std::size_t size) {
         std::string filename = "/dev/urandom";
 
         randomstream.open(filename, std::ios::in);
-        if (randomstream.is_open()) {
+        if (randomstream.good()) {
             char *buffer = new char[size];
             randomstream.read(buffer, size);
             randomstream.close();
