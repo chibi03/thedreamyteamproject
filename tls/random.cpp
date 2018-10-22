@@ -4,8 +4,13 @@
 #include <cstring>
 #include <string>
 
-bool get_random_data(uint8_t* data, std::size_t size)
-{
+/**
+ * Initialises the provided data variable with a random value
+ * @param data random value
+ * @param size the size of the data variable
+ * @return true if the generation was successful
+ */
+bool get_random_data(uint8_t *data, std::size_t size) {
     if (size) {
         sufficient_entropy();
         std::ifstream randomstream;
@@ -30,16 +35,19 @@ bool get_random_data(uint8_t* data, std::size_t size)
     return false;
 }
 
-bool sufficient_entropy(){
+/**
+ * Check if sufficient entropy exists. Entropy may not have been initialized when /dev/urandom is read.
+ * @return true if enough entropy available
+ */
+bool sufficient_entropy() {
     std::ifstream available_file("/proc/sys/kernel/random/entropy_avail");
     char first_line[256];
 
-    if (available_file.good())
-    {
+    if (available_file.good()) {
         available_file.getline(first_line, 256);
     }
 
     available_file.close();
-    std::cout << first_line  << " amount of entropy";
+    std::cout << first_line << " amount of entropy";
     return true;
 }
