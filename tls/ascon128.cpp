@@ -35,11 +35,8 @@ bool ascon128::encrypt(std::vector <uint8_t> &ciphertext, const std::vector <uin
 bool ascon128::decrypt(std::vector <uint8_t> &plaintext, const std::vector <uint8_t> &ciphertext,
                        const std::vector <uint8_t> &nonce_data,
                        const std::vector <uint8_t> &additional_data) const {
-    /// \todo decrypt ciphertext using ascon with the given nonce and additional
-    /// data.
 
     unsigned long long p_sz = plaintext_size(ciphertext.size());
-
     plaintext.resize(p_sz);
 
     bool r = crypto_aead_decrypt(plaintext.data(), &p_sz, 0, ciphertext.data(), ciphertext.size(),
