@@ -1,5 +1,6 @@
 #include "ascon128.h"
 #include "../ascon/crypto_aead.h"
+#include <cstring>
  
 ascon128::ascon128(){
 /// \todo Initialize with an all 0 key.
@@ -23,25 +24,33 @@ void ascon128::set_key(const key_storage& key)
 }
 
 bool ascon128::encrypt(std::vector<uint8_t>& ciphertext, const std::vector<uint8_t>& plaintext,
-                       const std::vector<uint8_t>& nonce_data,
-                       const std::vector<uint8_t>& additional_data) const
+	const std::vector<uint8_t>& nonce_data,
+	const std::vector<uint8_t>& additional_data) const
 {
 
-	/// \todo Encrypt data using Ascon with the given nonce and additional data.
-	unsigned long long c_sz;
-	bool r=crypto_aead_encrypt(ciphertext.data(), &c_sz, plaintext.data(), plaintext.size(), additional_data.data(), additional_size, 0, nonce_data.data(), key.data()) == 0 ? false : true;
+	unsigned long long c_sz = plaintext.size() + additional_size;
+	
 
-  return r;
+	ciphertext.resize(c_sz);
+
+	bool r = crypto_aead_encrypt(ciphertext.data(), &c_sz, plaintext.data(), plaintext.size(), additional_data.data(), additional_data.size(), 0, nonce_data.data(), key.data()) == 0 ? true : false;
+
+
+	return r;
 }
 
 bool ascon128::decrypt(std::vector<uint8_t>& plaintext, const std::vector<uint8_t>& ciphertext,
-                       const std::vector<uint8_t>& nonce_data,
-                       const std::vector<uint8_t>& additional_data) const
+	const std::vector<uint8_t>& nonce_data,
+	const std::vector<uint8_t>& additional_data) const
 {
-  /// \todo Decrypt ciphertext using Ascon with the given nonce and additional
-  /// data.
-	unsigned long long p_sz;
+	/// \todo decrypt ciphertext using ascon with the given nonce and additional
+	/// data.
 
-	bool r = crypto_aead_decrypt(plaintext.data(), &p_sz, 0, ciphertext.data(), ciphertext.size(), additional_data.data(), additional_size, nonce_data.data(), key.data()) == 0 ? false : true;
-  return r;
+	unsigned long long p_sz = ciphertext.size() - additional_size;
+
+	plaintext.resize(p_sz);
+
+	bool r = crypto_aead_decrypt(plaintext.data(), &p_sz, 0, ciphertext.data(), ciphertext.size(), additional_data.data(), additional_data.size(), nonce_data.data(), key.data()) == 0 ? true : false;
+	
+	return r;
 }
