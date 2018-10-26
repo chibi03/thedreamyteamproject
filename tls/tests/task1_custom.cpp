@@ -31,7 +31,22 @@
 namespace {
     const aes128gcm::key_storage key = "AD7A2BD03EAC835A6F620FDCB506B345"_k;
     const aes128gcm::key_storage key_invalid = "ER7A2OO03EAC835A6F620FDCB511B345"_k;
+    std::vector<uint8_t> nonce_data_1 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05,
+                                        0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b};
+    std::vector<uint8_t> nonce_data_2 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+                                       0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
 }
+
+START_TEST(reset_nonce_diff_size)
+{
+  incrementing_nonce nonce1(nonce_data_1);
+  std::vector<uint8_t> nonce1_raw;
+  ++nonce1;
+  nonce1.reset(nonce_data_2);
+  nonce1_raw = nonce1.nonce();
+  ck_assert_uint_eq(std::memcmp(nonce1_raw.data(), nonce_data_1.data(), nonce_data_1.size()), 0);
+}
+END_TEST
 
 
 START_TEST(constant_time_decrypt_check){
@@ -68,8 +83,10 @@ END_TEST
 
 int main(int argc, char **argv) {
     Suite *suite = suite_create("Student Task 1 Tests");
-    // TCase* tcase = tcase_create("FIRST");
-    // tcase_add_test(tcase, custom_1);
+    TCase* tcase = tcase_create("Student Task 1 Tests");
+    tcase_set_timeout(tcase, 0);
+    //tcase_add_test(tcase, custom_1);
+    tcase_add_test(tcase, reset_nonce_diff_size);
     // suite_add_tcase(suite, tcase);
 
     SRunner *suite_runner = srunner_create(suite);
