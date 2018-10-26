@@ -8,6 +8,8 @@
 /// HKDF using HMAC-SHA256 according to RFC 5869
 class hkdf
 {
+private:
+  uint8_t temp[hmac_sha2::block_size];
 
 public:
   typedef hmac_sha2 hmac;
