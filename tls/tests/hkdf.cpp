@@ -66,6 +66,32 @@ START_TEST(zero_input)
 }
 END_TEST
 
+
+START_TEST(expand_label)
+{
+  const std::vector<uint8_t> salt = "0b0b0ba9a9a9a9a9"_x;
+  const std::vector<uint8_t> ikm  = "91726354"_x;
+  hkdf kdf_early_secret(salt, ikm);
+
+  const std::vector<uint8_t> label   = kdf_early_secret.expand_label("label", "ab"_x, 16);
+  ck_assert_array_split_eq(label, "513139538a91572c2d8696a4c83db810"_x);
+
+}
+END_TEST
+
+START_TEST(derive_secret)
+{
+  const std::vector<uint8_t> salt = "0b0b0ba9a9a9a9a9"_x;
+  const std::vector<uint8_t> ikm  = "91726354"_x;
+  hkdf kdf_early_secret(salt, ikm);
+
+  const std::vector<uint8_t> messages = "012345678901234567890123456789"_x;
+  const std::vector<uint8_t> secret   = kdf_early_secret.derive_secret("derived", messages);
+  ck_assert_array_split_eq(secret,
+                           "6ca9b004d14bae6d3425cf65993e6f9c3c640be3cc1fff502ac78cd39de6e4ba"_x);
+}
+END_TEST
+
 int main(int argc, char** argv)
 {
   Suite* suite = suite_create("HKDF");
@@ -76,6 +102,13 @@ int main(int argc, char** argv)
   tcase_add_test(tcase, long_input);
   tcase_add_test(tcase, zero_input);
   suite_add_tcase(suite, tcase);
+
+  tcase = tcase_create("TLS");
+  tcase_set_timeout(tcase, 0);
+  tcase_add_test(tcase, expand_label);
+  tcase_add_test(tcase, derive_secret);
+  suite_add_tcase(suite, tcase);
+
 
   SRunner* suite_runner = srunner_create(suite);
   srunner_run(suite_runner, argc, argv);
