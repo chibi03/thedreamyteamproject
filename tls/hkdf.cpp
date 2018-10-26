@@ -1,60 +1,90 @@
 #include "hkdf.h"
 #include "hmac-sha2.h"
+#include "endian.h"
 #include <math.h>
+
+struct HkdfLabel{
+    uint16_t length;
+    std::string label;
+    std::vector<uint8_t> context;
+} hkdflabel;
 
 hkdf::hkdf(const std::vector<uint8_t> &salt, const std::vector<uint8_t> &ikm) {
 /// \todo initialize based on salt and ikm using HKDF-Extract
-  hmac_sha2 hmac(ikm.data(), (std::size_t) sizeof(ikm));
+  hmac hmac(ikm.data(), (std::size_t) sizeof(ikm));
   hmac.update(salt.data(), (std::size_t) sizeof(salt));
 
   hmac_sha2::digest_storage prk = hmac.digest();
-  memcpy(this->temp, &prk, 64);
+  memcpy(this->h_key, &prk, 64);
 }
 
 hkdf::hkdf(const std::vector<uint8_t> &prk) {
   //// \todo initialize based on the given PRK
   if (prk.empty()) {
-    memset(this->temp, 0x00, 64);
+    memset(this->h_key, 0x00, 64);
   } else {
-    memcpy(this->temp, &prk, 64);
+    memcpy(this->h_key, &prk, 64);
   }
 }
 
 std::vector<uint8_t> hkdf::expand(const std::vector<uint8_t> &info, size_t len) {
   //// \todo Return HKDF-Expand for given info and length
-  uint8_t N = ceil(len/sizeof(temp));
-  uint8_t counter = 0x00;
-  std::string OKM = "";
-  for (size_t i = 0; i < N; i++) {
-    counter++;
-    std::string tmp = "";
-    tmp += OKM;
-    for(unsigned int i = 0; i<info.size(); i++){
-      strcat(tmp, info[i].toString());
+
+  int N = ceil(len/sizeof(this->h_key));
+  std::vector<uint8_t> init_t;
+  return expand_helper(init_t, info, 0x00, N);
+}
+
+std::vector<uint8_t> hkdf::expand_helper(std::vector<uint8_t> &input, const std::vector<uint8_t> &info, int counter, int N){
+  hmac hmac(this->h_key, sizeof(this->h_key));
+ if (N >= 0){
+    std::vector<uint8_t> data;
+    data.insert(data.end(), input.begin(), input.end());
+    data.insert(data.end(), info.begin(), info.end());
+    data.push_back(counter);
+
+    hmac.update(data.data(), (std::size_t) sizeof(data));
+
+    std::vector<uint8_t> new_input;
+    hmac_sha2::digest_storage digest = hmac.digest();
+    for(auto it = digest.begin(); it != digest.end(); ++it){
+      new_input.push_back(*it);
     }
-    strcat(tmp, counter.toString());
-    strcat(OKM, hmac(this->temp, tmp));
+   std::vector<uint8_t> result = expand_helper(new_input, info, counter++, N--);
+   new_input.insert(new_input.end(), result.begin(), result.end());
+   return new_input;
   }
-  OKM = OKM.substr(0, len);
-  std::vector<uint8_t> result(OKM.begin(), OKM.end());
-  return result;
+  return std::vector<uint8_t>();
 }
 
 std::vector<uint8_t> hkdf::expand_label(const std::string &label,
                                         const std::vector<uint8_t> &context, size_t length) {
   /// \todo Implement HKDF-Expand-Label from TLS.
-  std::string conclbl = "";
-  conclbl += label;
-  strcat(conclbl, context);
-  strcat(conclbl, length.ToString());
+  hkdflabel.length = hton<uint16_t>(length);
+  hkdflabel.label = "tls13 " + label;
+  hkdflabel.context = context;
 
-  return conclbl;
+  std::string tmp_label = std::to_string(hkdflabel.length) + hkdflabel.label;
+  for (unsigned int i = 0; i < hkdflabel.context.size(); i++ ){
+    tmp_label += hkdflabel.context[i];
+  }
+
+  std::vector<uint8_t> info(tmp_label.begin(), tmp_label.end());
+  return expand(info, length);
 }
 
 std::vector<uint8_t> hkdf::derive_secret(const std::string &label,
                                          const std::vector<uint8_t> &messages) {
   /// \todo Implement Derive-Secret from TLS.
-  this->expand();
-  expand_label(label, messages);
-  return std::vector<uint8_t>();
+  hmac transcript_hash(this->h_key, sizeof(this->h_key));
+  transcript_hash.update(messages.data(), sizeof(messages));
+
+  hmac_sha2::digest_storage digest = transcript_hash.digest();
+  std::vector<uint8_t> hashed_messages;
+
+  for(auto it = digest.begin(); it != digest.end(); ++it){
+    hashed_messages.push_back(*it);
+  }
+
+  return expand_label(label, hashed_messages, hashed_messages.size());
 }
