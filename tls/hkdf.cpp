@@ -4,7 +4,7 @@
 hkdf::hkdf(const std::vector<uint8_t>& salt, const std::vector<uint8_t>& ikm)
 {
 /// \todo initialize based on salt and ikm using HKDF-Extract
-	memccpy(temp, hmac_sha2(salt, ikm), hmac_sha2::block_size);
+	memccpy(temp, hmac_sha2(salt, ikm), 64);
 }
 
 hkdf::hkdf(const std::vector<uint8_t>& prk)

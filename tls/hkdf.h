@@ -10,7 +10,6 @@ class hkdf
 {
 private:
   uint8_t temp[hmac_sha2::block_size];
-
 public:
   typedef hmac_sha2 hmac;
 
