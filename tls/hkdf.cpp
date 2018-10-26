@@ -2,17 +2,21 @@
 #include "hmac-sha2.h"
 #include "endian.h"
 #include <math.h>
+#include <iostream>
 
-struct HkdfLabel{
-    uint16_t length;
-    std::string label;
-    std::vector<uint8_t> context;
+struct HkdfLabel {
+  uint16_t length;
+  std::string label;
+  std::vector<uint8_t> context;
 } hkdflabel;
 
 hkdf::hkdf(const std::vector<uint8_t> &salt, const std::vector<uint8_t> &ikm) {
 /// \todo initialize based on salt and ikm using HKDF-Extract
-  hmac hmac(ikm.data(), (std::size_t) sizeof(ikm));
-  hmac.update(salt.data(), (std::size_t) sizeof(salt));
+  std::vector<uint8_t> data;
+  data.insert(data.end(), salt.begin(), salt.end());
+  data.insert(data.end(), ikm.begin(), ikm.end());
+
+  hmac hmac(data.data(), sizeof(data));
 
   hmac_sha2::digest_storage prk = hmac.digest();
   memcpy(this->h_key, &prk, 64);
@@ -35,24 +39,27 @@ std::vector<uint8_t> hkdf::expand(const std::vector<uint8_t> &info, size_t len) 
   return expand_helper(init_t, info, 0x00, N);
 }
 
-std::vector<uint8_t> hkdf::expand_helper(std::vector<uint8_t> &input, const std::vector<uint8_t> &info, int counter, int N){
+std::vector<uint8_t> hkdf::expand_helper(std::vector<uint8_t> &input,
+                                         const std::vector<uint8_t> &info,
+                                         int counter,
+                                         int N) {
   hmac hmac(this->h_key, sizeof(this->h_key));
- if (N >= 0){
+  if (N > 0) {
     std::vector<uint8_t> data;
     data.insert(data.end(), input.begin(), input.end());
     data.insert(data.end(), info.begin(), info.end());
     data.push_back(counter);
 
-    hmac.update(data.data(), (std::size_t) sizeof(data));
-
+    hmac.update(data.data(), sizeof(data));
     std::vector<uint8_t> new_input;
     hmac_sha2::digest_storage digest = hmac.digest();
-    for(auto it = digest.begin(); it != digest.end(); ++it){
+
+    for (auto it = digest.begin(); it!=digest.end(); ++it) {
       new_input.push_back(*it);
     }
-   std::vector<uint8_t> result = expand_helper(new_input, info, counter++, N--);
-   new_input.insert(new_input.end(), result.begin(), result.end());
-   return new_input;
+    std::vector<uint8_t> result = expand_helper(new_input, info, counter++, N--);
+    new_input.insert(new_input.end(), result.begin(), result.end());
+    return new_input;
   }
   return std::vector<uint8_t>();
 }
@@ -65,7 +72,7 @@ std::vector<uint8_t> hkdf::expand_label(const std::string &label,
   hkdflabel.context = context;
 
   std::string tmp_label = std::to_string(hkdflabel.length) + hkdflabel.label;
-  for (unsigned int i = 0; i < hkdflabel.context.size(); i++ ){
+  for (unsigned int i = 0; i < hkdflabel.context.size(); i++) {
     tmp_label += hkdflabel.context[i];
   }
 
@@ -82,7 +89,7 @@ std::vector<uint8_t> hkdf::derive_secret(const std::string &label,
   hmac_sha2::digest_storage digest = transcript_hash.digest();
   std::vector<uint8_t> hashed_messages;
 
-  for(auto it = digest.begin(); it != digest.end(); ++it){
+  for (auto it = digest.begin(); it!=digest.end(); ++it) {
     hashed_messages.push_back(*it);
   }
 
