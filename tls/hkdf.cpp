@@ -17,8 +17,8 @@ hkdf::hkdf(const std::vector<uint8_t> &salt, const std::vector<uint8_t> &ikm) {
   data.insert(data.end(), salt.begin(), salt.end());
   data.insert(data.end(), ikm.begin(), ikm.end());
 
-  hmac hmac(data.data(), sizeof(data));
-
+  hmac hmac(ikm.data(), sizeof(ikm));
+  hmac.update(data.data(), sizeof(data));
   hmac_sha2::digest_storage prk = hmac.digest();
   std::copy(prk.begin(), prk.end(), this->h_key);
 
@@ -40,19 +40,23 @@ std::vector<uint8_t> hkdf::expand(const std::vector<uint8_t> &info, size_t len) 
   //// \todo Return HKDF-Expand for given info and length
 
   std::cout << "Expanding HKDF" << std::endl;
-  int N = ceil(len/sizeof(this->h_key)); // N is wrong!
+  std::cout << len << "/" << sizeof(this->h_key)<< std::endl;
+  int N = (int)ceil((float)len/(float)sizeof(this->h_key)); // N is wrong!
   std::cout << "N = " << N << std::endl;
   std::vector<uint8_t> init_t;
-  return expand_helper(init_t, info, 0x01, N);
+  hmac hmac(this->h_key, sizeof(this->h_key));
+  std::vector<uint8_t> result = expand_helper(init_t, info, 0x01, N, hmac);
+
+  return result;
 }
 
 std::vector<uint8_t> hkdf::expand_helper(std::vector<uint8_t> &input,
                                          const std::vector<uint8_t> &info,
                                          int counter,
-                                         int N) {
+                                         int N, hmac hmac) {
 
   std::cout << "Expanding Helper HKDF" << std::endl;
-  hmac hmac(this->h_key, sizeof(this->h_key));
+
   if (N > 0) {
     std::cout << "Expanding Helper Inside HKDF N= " << N << std::endl;
     std::vector<uint8_t> data;
@@ -67,7 +71,12 @@ std::vector<uint8_t> hkdf::expand_helper(std::vector<uint8_t> &input,
     for (auto it = digest.begin(); it!=digest.end(); ++it) {
       new_input.push_back(*it);
     }
-    std::vector<uint8_t> result = expand_helper(new_input, info, ++counter, --N);
+    std::cout << "ßßßßßßßßßßßßßßßßßßß" << std::endl;
+    for(unsigned int i = 0; i < new_input.size(); i++) {
+      std::cout << (unsigned)new_input[i] << ", " ;
+    }
+    std::cout << "Current new input length " << new_input.size() << std::endl;
+    std::vector<uint8_t> result = expand_helper(new_input, info, ++counter, --N, hmac);
     result.insert(result.begin(), new_input.begin(), new_input.end());
     std::cout << "Current result length " << result.size() << std::endl;
     return result;
