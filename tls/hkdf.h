@@ -4,6 +4,7 @@
 #include "hmac-sha2.h"
 #include <string>
 #include <vector>
+#include <iostream>
 
 /// HKDF using HMAC-SHA256 according to RFC 5869
 class hkdf {
@@ -25,7 +26,7 @@ class hkdf {
                                      const std::vector<uint8_t> &messages);
 
  private:
-  uint8_t h_key[hmac_sha2::block_size];
+  uint8_t h_key[hmac_sha2::digest_size];
 
   struct {
     uint16_t length;

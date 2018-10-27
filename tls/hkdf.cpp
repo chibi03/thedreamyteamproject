@@ -12,6 +12,7 @@ struct HkdfLabel {
 
 hkdf::hkdf(const std::vector<uint8_t> &salt, const std::vector<uint8_t> &ikm) {
 /// \todo initialize based on salt and ikm using HKDF-Extract
+  //TODO: add check for IKM and allow optional Salt
   std::vector<uint8_t> data;
   data.insert(data.end(), salt.begin(), salt.end());
   data.insert(data.end(), ikm.begin(), ikm.end());
@@ -19,32 +20,41 @@ hkdf::hkdf(const std::vector<uint8_t> &salt, const std::vector<uint8_t> &ikm) {
   hmac hmac(data.data(), sizeof(data));
 
   hmac_sha2::digest_storage prk = hmac.digest();
-  memcpy(this->h_key, &prk, 64);
+  std::copy(prk.begin(), prk.end(), this->h_key);
+
+  std::cout << "Created HKDF" << std::endl;
+  std::cout << "Hash length: " << sizeof(this->h_key) << std::endl;
 }
 
 hkdf::hkdf(const std::vector<uint8_t> &prk) {
   //// \todo initialize based on the given PRK
   if (prk.empty()) {
-    memset(this->h_key, 0x00, 64);
+    throw std::runtime_error("Missing argument"); //TODO: need to do a proper exception
   } else {
-    memcpy(this->h_key, &prk, 64);
+    std::copy(prk.begin(), prk.end(), this->h_key);
   }
+  std::cout << "Created HKDF 2" << std::endl;
 }
 
 std::vector<uint8_t> hkdf::expand(const std::vector<uint8_t> &info, size_t len) {
   //// \todo Return HKDF-Expand for given info and length
 
-  int N = ceil(len/sizeof(this->h_key));
+  std::cout << "Expanding HKDF" << std::endl;
+  int N = ceil(len/sizeof(this->h_key)); // N is wrong!
+  std::cout << "N = " << N << std::endl;
   std::vector<uint8_t> init_t;
-  return expand_helper(init_t, info, 0x00, N);
+  return expand_helper(init_t, info, 0x01, N);
 }
 
 std::vector<uint8_t> hkdf::expand_helper(std::vector<uint8_t> &input,
                                          const std::vector<uint8_t> &info,
                                          int counter,
                                          int N) {
+
+  std::cout << "Expanding Helper HKDF" << std::endl;
   hmac hmac(this->h_key, sizeof(this->h_key));
   if (N > 0) {
+    std::cout << "Expanding Helper Inside HKDF N= " << N << std::endl;
     std::vector<uint8_t> data;
     data.insert(data.end(), input.begin(), input.end());
     data.insert(data.end(), info.begin(), info.end());
@@ -57,9 +67,10 @@ std::vector<uint8_t> hkdf::expand_helper(std::vector<uint8_t> &input,
     for (auto it = digest.begin(); it!=digest.end(); ++it) {
       new_input.push_back(*it);
     }
-    std::vector<uint8_t> result = expand_helper(new_input, info, counter++, N--);
-    new_input.insert(new_input.end(), result.begin(), result.end());
-    return new_input;
+    std::vector<uint8_t> result = expand_helper(new_input, info, ++counter, --N);
+    result.insert(result.begin(), new_input.begin(), new_input.end());
+    std::cout << "Current result length " << result.size() << std::endl;
+    return result;
   }
   return std::vector<uint8_t>();
 }
