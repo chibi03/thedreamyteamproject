@@ -1,6 +1,13 @@
 #include "helpers.h"
 #include <check.h>
 #include <chrono>
+#include <cstring>
+#include <vector>
+#include "../counter.h"
+#include "../aes128gcm.h"
+#include "../../utils/tests.h"
+#include "../endian.h"
+#include <array>
 
 // Include your custom testc ases here
 // Write at LEAST 5 custom tests to verify your own implementation.
@@ -29,8 +36,8 @@
 // You may look into some of our tests to get a feeling for the workflow.
 
 namespace {
-    const aes128gcm::key_storage key = "AD7A2BD03EAC835A6F620FDCB506B345"_k;
-    const aes128gcm::key_storage key_invalid = "ER7A2OO03EAC835A6F620FDCB511B345"_k;
+    //const aes128gcm::key_storage key = "AD7A2BD03EAC835A6F620FDCB506B345"_k;
+    //const aes128gcm::key_storage key_invalid = "ER7A2OO03EAC835A6F620FDCB511B345"_k;
     std::vector<uint8_t> nonce_data_1 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05,
                                         0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b};
     std::vector<uint8_t> nonce_data_2 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
@@ -44,11 +51,12 @@ START_TEST(reset_nonce_diff_size)
   ++nonce1;
   nonce1.reset(nonce_data_2);
   nonce1_raw = nonce1.nonce();
-  ck_assert_uint_eq(std::memcmp(nonce1_raw.data(), nonce_data_1.data(), nonce_data_1.size()), 0);
+  ck_assert_uint_eq(std::memcmp(nonce1_raw.data(), nonce_data_2.data(), nonce_data_2.size()), 0);
 }
 END_TEST
 
 
+/*
 START_TEST(constant_time_decrypt_check){
     incrementing_nonce nonce(nonce_data);
     ++nonce;
@@ -80,7 +88,7 @@ START_TEST(constant_time_decrypt_check){
 }
 
 END_TEST
-
+*/
 int main(int argc, char **argv) {
     Suite *suite = suite_create("Student Task 1 Tests");
     TCase* tcase = tcase_create("Student Task 1 Tests");

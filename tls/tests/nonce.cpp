@@ -44,7 +44,7 @@ START_TEST(loop_aesgcm)
     uint64_t cn = hton<uint64_t>(counter ^ i);
     nonce1_raw  = nonce1.nonce();
     ck_assert_uint_eq(std::memcmp(nonce1_raw.data(), nonce_data_1.data(), nonce_data_1.size() - 8),
-                      0);
+                      0); 
     ck_assert_uint_eq(std::memcmp(nonce1_raw.data() + nonce_data_1.size() - 8, &cn, 8), 0);
   }
 }
@@ -57,6 +57,7 @@ START_TEST(reset_aesgcm)
   ++nonce1;
   nonce1.reset(nonce_data_3);
   nonce1_raw = nonce1.nonce();
+  std::cout << std::endl;
   ck_assert_uint_eq(std::memcmp(nonce1_raw.data(), nonce_data_3.data(), nonce_data_3.size()), 0);
 }
 END_TEST

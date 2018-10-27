@@ -35,10 +35,11 @@ incrementing_nonce& incrementing_nonce::operator++() {
  * @param bytes
  */
 void incrementing_nonce::reset(const std::vector<uint8_t>& bytes) {
-	bool k = this->nonce_data.size() == bytes.size() ? true : false;
-	for(unsigned int i = 0; i < this->nonce_data.size(); i++) {
-		this->nonce_data[i] = (this->nonce_data[i] & !k) ^ (bytes[i] & k);
+	unsigned int size_diff = this->nonce_data.size() - bytes.size();
+	for(unsigned int i = 0; i < size_diff; i++) {
+		this->nonce_data.push_back(0);
 	}
+	memcpy(this->nonce_data.data(), bytes.data(), sizeof bytes);
 }
 
 /**
