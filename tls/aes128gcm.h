@@ -10,6 +10,16 @@
 /// AES-GCM with 128 bit keys and 96 bit nonces.
 class aes128gcm : public basic_ae<16, 16>
 {
+private:
+  std::vector<uint8_t> key;
+  std::vector<uint8_t> plaintext;
+  std::vector<uint8_t> ciphertext;
+  std::vector<uint8_t> random_data;
+  std::std::vector<uint8_t> tag;
+  aes128::aes128 aes128;
+
+  void gmult(std::vector<uint8_t> tag, std::vector data);
+
 public:
   static constexpr std::size_t nonce_size = 12;
 
