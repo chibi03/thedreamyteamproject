@@ -12,17 +12,19 @@ struct HkdfLabel {
 
 hkdf::hkdf(const std::vector<uint8_t> &salt, const std::vector<uint8_t> &ikm) {
 /// \todo initialize based on salt and ikm using HKDF-Extract
-  //TODO: add check for IKM and allow optional Salt
-  std::vector<uint8_t> data;
-  data.insert(data.end(), salt.begin(), salt.end());
-  data.insert(data.end(), ikm.begin(), ikm.end());
+  if (ikm.empty()) {
+    //TODO throw error
+  }
 
-  hmac hmac(ikm.data(), sizeof(ikm));
-  hmac.update(data.data(), sizeof(data));
+  if (!salt.empty()) {
+    //TODO find the value used when empty
+  }
+
+  hmac hmac(salt.data(), sizeof(salt));
+  hmac.update(ikm.data(), sizeof(ikm));
   hmac_sha2::digest_storage prk = hmac.digest();
-  std::copy(prk.begin(), prk.end(), this->h_key);
 
-  std::cout << "Created HKDF" << std::endl;
+  std::copy(prk.begin(), prk.end(), this->h_key);
   std::cout << "Hash length: " << sizeof(this->h_key) << std::endl;
 }
 
@@ -36,52 +38,64 @@ hkdf::hkdf(const std::vector<uint8_t> &prk) {
   std::cout << "Created HKDF 2" << std::endl;
 }
 
+/**
+  The output OKM is calculated as follows:
+    N = ceil(L/HashLen)
+    T = T(1) | T(2) | T(3) | ... | T(N)
+    OKM = first L bytes of T
+  where:
+    T(0) = empty string (zero length)
+    T(1) = HMAC-Hash(PRK, T(0) | info | 0x01)
+    T(2) = HMAC-Hash(PRK, T(1) | info | 0x02)
+    T(3) = HMAC-Hash(PRK, T(2) | info | 0x03)
+    ...
+*/
 std::vector<uint8_t> hkdf::expand(const std::vector<uint8_t> &info, size_t len) {
   //// \todo Return HKDF-Expand for given info and length
 
+  if (len <= 0) {
+    throw std::invalid_argument("The length has to be larger than 0");
+  }
+
+  if (info.empty()) {
+    //TODO make sure to initialize with zeroes;
+  }
+
   std::cout << "Expanding HKDF" << std::endl;
-  std::cout << len << "/" << sizeof(this->h_key)<< std::endl;
-  int N = (int)ceil((float)len/(float)sizeof(this->h_key)); // N is wrong!
-  std::cout << "N = " << N << std::endl;
+  int N = ceil(((float) len / (float) sizeof(this->h_key)));
+
   std::vector<uint8_t> init_t;
   hmac hmac(this->h_key, sizeof(this->h_key));
-  std::vector<uint8_t> result = expand_helper(init_t, info, 0x01, N, hmac);
 
-  return result;
+  std::vector<uint8_t> okm;
+  std::vector<uint8_t> T = {};
+  int constant = 0x00;
+  for (int i = 0; i < N; i++) {
+    T = expand_helper(T, info, ++constant, hmac);
+    okm.insert(okm.end(), T.begin(), T.end());
+  }
+
+  std::cout << "Size of T: " << okm.size() << std::endl;
+  okm.resize(len);
+  return okm;
 }
 
 std::vector<uint8_t> hkdf::expand_helper(std::vector<uint8_t> &input,
                                          const std::vector<uint8_t> &info,
-                                         int counter,
-                                         int N, hmac hmac) {
+                                         int constant,
+                                         hmac hmac) {
+  hmac.update(input.data(), sizeof(input));
+  hmac.update(info.data(), sizeof(info));
+  hmac.update(constant, sizeof(constant));
+  std::vector<uint8_t> new_input;
+  hmac_sha2::digest_storage digest = hmac.digest();
 
-  std::cout << "Expanding Helper HKDF" << std::endl;
-
-  if (N > 0) {
-    std::cout << "Expanding Helper Inside HKDF N= " << N << std::endl;
-    std::vector<uint8_t> data;
-    data.insert(data.end(), input.begin(), input.end());
-    data.insert(data.end(), info.begin(), info.end());
-    data.push_back(counter);
-
-    hmac.update(data.data(), sizeof(data));
-    std::vector<uint8_t> new_input;
-    hmac_sha2::digest_storage digest = hmac.digest();
-
-    for (auto it = digest.begin(); it!=digest.end(); ++it) {
-      new_input.push_back(*it);
-    }
-    std::cout << "ßßßßßßßßßßßßßßßßßßß" << std::endl;
-    for(unsigned int i = 0; i < new_input.size(); i++) {
-      std::cout << (unsigned)new_input[i] << ", " ;
-    }
-    std::cout << "Current new input length " << new_input.size() << std::endl;
-    std::vector<uint8_t> result = expand_helper(new_input, info, ++counter, --N, hmac);
-    result.insert(result.begin(), new_input.begin(), new_input.end());
-    std::cout << "Current result length " << result.size() << std::endl;
-    return result;
+  for (auto it = digest.begin(); it!=digest.end(); ++it) {
+    new_input.push_back(*it);
   }
-  return std::vector<uint8_t>();
+
+  std::cout << "Current new input length " << new_input.size() << std::endl;
+  return new_input;
 }
 
 std::vector<uint8_t> hkdf::expand_label(const std::string &label,
