@@ -34,7 +34,7 @@ class hkdf {
     std::vector<uint8_t> context;
   } HkdfLabel;
 
-  std::vector<uint8_t> expand_helper(std::vector<uint8_t> &input, const std::vector<uint8_t> &info, int constant,
+  std::vector<uint8_t> expand_helper(std::vector<uint8_t> &input, const std::vector<uint8_t> &info, uint8_t constant,
                                      hmac hmac);
 };
 

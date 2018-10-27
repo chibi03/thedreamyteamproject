@@ -69,7 +69,7 @@ std::vector<uint8_t> hkdf::expand(const std::vector<uint8_t> &info, size_t len) 
 
   std::vector<uint8_t> okm;
   std::vector<uint8_t> T = {};
-  int constant = 0x00;
+  uint8_t constant = 0x00;
   for (int i = 0; i < N; i++) {
     T = expand_helper(T, info, ++constant, hmac);
     okm.insert(okm.end(), T.begin(), T.end());
@@ -82,11 +82,13 @@ std::vector<uint8_t> hkdf::expand(const std::vector<uint8_t> &info, size_t len) 
 
 std::vector<uint8_t> hkdf::expand_helper(std::vector<uint8_t> &input,
                                          const std::vector<uint8_t> &info,
-                                         int constant,
+                                         uint8_t constant,
                                          hmac hmac) {
-  hmac.update(input.data(), sizeof(input));
+  if(!input.empty()){
+    hmac.update(input.data(), sizeof(input));
+  }
   hmac.update(info.data(), sizeof(info));
-  hmac.update(constant, sizeof(constant));
+  hmac.update((uint8_t*) &constant, sizeof(constant));
   std::vector<uint8_t> new_input;
   hmac_sha2::digest_storage digest = hmac.digest();
 
