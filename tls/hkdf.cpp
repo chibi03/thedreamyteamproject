@@ -12,17 +12,18 @@ struct HkdfLabel {
 
 hkdf::hkdf(const std::vector<uint8_t> &salt, const std::vector<uint8_t> &ikm) {
 /// \todo initialize based on salt and ikm using HKDF-Extract
+  std::vector<uint8_t> valid_salt(hmac::digest_size, 0);
   if (ikm.empty()) {
-    //TODO throw error
+    throw std::invalid_argument("The initial keying material cannot be empty.");
   }
 
-  if (!salt.empty()) {
-    //TODO find the value used when empty
+  if (salt.empty()) {
+    valid_salt = salt;
   }
 
-  hmac hmac(salt.data(), sizeof(salt));
+  hmac hmac(valid_salt.data(), sizeof(valid_salt));
   hmac.update(ikm.data(), sizeof(ikm));
-  hmac_sha2::digest_storage prk = hmac.digest();
+  hmac::digest_storage prk = hmac.digest();
 
   std::copy(prk.begin(), prk.end(), this->h_key);
   std::cout << "Hash length: " << sizeof(this->h_key) << std::endl;
@@ -31,7 +32,7 @@ hkdf::hkdf(const std::vector<uint8_t> &salt, const std::vector<uint8_t> &ikm) {
 hkdf::hkdf(const std::vector<uint8_t> &prk) {
   //// \todo initialize based on the given PRK
   if (prk.empty()) {
-    throw std::runtime_error("Missing argument"); //TODO: need to do a proper exception
+    throw std::invalid_argument("Missing pseudo random key value.");
   } else {
     std::copy(prk.begin(), prk.end(), this->h_key);
   }
@@ -54,15 +55,15 @@ std::vector<uint8_t> hkdf::expand(const std::vector<uint8_t> &info, size_t len) 
   //// \todo Return HKDF-Expand for given info and length
 
   if (len <= 0) {
-    throw std::invalid_argument("The length has to be larger than 0");
+    throw std::invalid_argument("The length has to be larger than 0.");
   }
 
-  if (info.empty()) {
-    //TODO make sure to initialize with zeroes;
+  if (len > 255*sizeof(this->h_key)) {
+    throw std::invalid_argument("The length has to be smaller or equal to HashLen * 255.");
   }
 
   std::cout << "Expanding HKDF" << std::endl;
-  int N = ceil(((float) len / (float) sizeof(this->h_key)));
+  int N = ceil(((float) len/(float) sizeof(this->h_key)));
 
   std::vector<uint8_t> init_t;
   hmac hmac(this->h_key, sizeof(this->h_key));
@@ -84,11 +85,13 @@ std::vector<uint8_t> hkdf::expand_helper(std::vector<uint8_t> &input,
                                          const std::vector<uint8_t> &info,
                                          uint8_t constant,
                                          hmac hmac) {
-  if(!input.empty()){
+  if (!input.empty()) {
     hmac.update(input.data(), sizeof(input));
   }
-  hmac.update(info.data(), sizeof(info));
-  hmac.update((uint8_t*) &constant, sizeof(constant));
+  if (!info.empty()) {
+    hmac.update(info.data(), sizeof(info));
+  }
+  hmac.update((uint8_t*) & constant, sizeof(constant));
   std::vector<uint8_t> new_input;
   hmac_sha2::digest_storage digest = hmac.digest();
 
