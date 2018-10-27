@@ -17,7 +17,7 @@ hkdf::hkdf(const std::vector<uint8_t> &salt, const std::vector<uint8_t> &ikm) {
     throw std::invalid_argument("The initial keying material cannot be empty.");
   }
 
-  if (salt.empty()) {
+  if (!salt.empty()) {
     valid_salt = salt;
   }
 
@@ -65,19 +65,20 @@ std::vector<uint8_t> hkdf::expand(const std::vector<uint8_t> &info, size_t len) 
   std::cout << "Expanding HKDF" << std::endl;
   int N = ceil(((float) len/(float) sizeof(this->h_key)));
 
-  std::vector<uint8_t> init_t;
   hmac hmac(this->h_key, sizeof(this->h_key));
 
   std::vector<uint8_t> okm;
   std::vector<uint8_t> T = {};
+
   uint8_t constant = 0x00;
   for (int i = 0; i < N; i++) {
     T = expand_helper(T, info, ++constant, hmac);
     okm.insert(okm.end(), T.begin(), T.end());
   }
 
-  std::cout << "Size of T: " << okm.size() << std::endl;
+  std::cout << "Size of OKM: " << okm.size() << std::endl;
   okm.resize(len);
+  std::cout << "Size of OKM after shrink: " << okm.size() << std::endl;
   return okm;
 }
 
@@ -88,14 +89,16 @@ std::vector<uint8_t> hkdf::expand_helper(std::vector<uint8_t> &input,
   if (!input.empty()) {
     hmac.update(input.data(), sizeof(input));
   }
+
   if (!info.empty()) {
     hmac.update(info.data(), sizeof(info));
   }
-  hmac.update((uint8_t*) & constant, sizeof(constant));
-  std::vector<uint8_t> new_input;
-  hmac_sha2::digest_storage digest = hmac.digest();
 
-  for (auto it = digest.begin(); it!=digest.end(); ++it) {
+  hmac.update(&constant, sizeof(constant));
+  hmac_sha2::digest_storage digest = hmac.digest();
+  std::vector<uint8_t> new_input;
+
+  for (auto it = digest.begin(); it != digest.end(); ++it) {
     new_input.push_back(*it);
   }
 
