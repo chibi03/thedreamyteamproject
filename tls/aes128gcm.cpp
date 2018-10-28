@@ -90,8 +90,8 @@ bool aes128gcm::encrypt(std::vector<uint8_t>& ciphertext, const std::vector<uint
 
     for(auto c_it = ciphertext.begin() + N * 16, 
           auto tmp_c_it = sub_ciphertext.begin(); 
-            c_it != ciphertext.end() || tmp_c_it != sub_ciphertext; 
-              c_it++, tmp_c_it++ i++) {
+            c_it != ciphertext.end() || tmp_c_it != sub_ciphertext.end(); 
+              c_it++, tmp_c_it++, i++) {
       *c_it = *tmp_c_it;
     }
   }
