@@ -122,7 +122,7 @@ START_TEST(empty_label_hkdf){
 END_TEST
 START_TEST(nonce_ascon)
 {
-	incrementing_nonce nonce(ascon_nonceS);
+	incrementing_nonce nonce(ascon_nonce);
 	++nonce;
 
 	ascon128 ascon(keyascon);
