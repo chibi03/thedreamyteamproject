@@ -3,6 +3,7 @@
 #include "endian.h"
 #include <math.h>
 #include <iostream>
+#include "../utils/utils.h"
 
 struct HkdfLabel {
   uint16_t length;
@@ -21,9 +22,11 @@ hkdf::hkdf(const std::vector<uint8_t> &salt, const std::vector<uint8_t> &ikm) {
     valid_salt = salt;
   }
 
-  hmac hmac(valid_salt.data(), sizeof(valid_salt));
-  hmac.update(ikm.data(), sizeof(ikm));
+  hmac hmac(valid_salt.data(), valid_salt.size());
+  hmac.update(ikm.data(), ikm.size());
   hmac::digest_storage prk = hmac.digest();
+
+  std::cout << util::to_hex_string(hmac.digest());
 
   std::copy(prk.begin(), prk.end(), this->h_key);
   std::cout << "Hash length: " << sizeof(this->h_key) << std::endl;
@@ -87,11 +90,11 @@ std::vector<uint8_t> hkdf::expand_helper(std::vector<uint8_t> &input,
                                          uint8_t constant,
                                          hmac hmac) {
   if (!input.empty()) {
-    hmac.update(input.data(), sizeof(input));
+    hmac.update(input.data(), input.size());
   }
 
   if (!info.empty()) {
-    hmac.update(info.data(), sizeof(info));
+    hmac.update(info.data(), info.size());
   }
 
   hmac.update(&constant, sizeof(constant));
@@ -109,6 +112,11 @@ std::vector<uint8_t> hkdf::expand_helper(std::vector<uint8_t> &input,
 std::vector<uint8_t> hkdf::expand_label(const std::string &label,
                                         const std::vector<uint8_t> &context, size_t length) {
   /// \todo Implement HKDF-Expand-Label from TLS.
+
+  if(label.empty()){
+    throw std::invalid_argument("A label must be supplied");
+  }
+
   hkdflabel.length = hton<uint16_t>(length);
   hkdflabel.label = "tls13 " + label;
   hkdflabel.context = context;
@@ -126,7 +134,7 @@ std::vector<uint8_t> hkdf::derive_secret(const std::string &label,
                                          const std::vector<uint8_t> &messages) {
   /// \todo Implement Derive-Secret from TLS.
   hmac transcript_hash(this->h_key, sizeof(this->h_key));
-  transcript_hash.update(messages.data(), sizeof(messages));
+  transcript_hash.update(messages.data(), messages.size());
 
   hmac_sha2::digest_storage digest = transcript_hash.digest();
   std::vector<uint8_t> hashed_messages;
