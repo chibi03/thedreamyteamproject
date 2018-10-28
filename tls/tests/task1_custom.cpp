@@ -121,10 +121,10 @@ START_TEST(empty_label_hkdf){
 END_TEST
 START_TEST(nonce_ascon)
 {
-	incrementing_nonce nonce(nonce_data);
+	incrementing_nonce nonce(ascon_nonceS);
 	++nonce;
 
-	ascon128 ascon(key);
+	ascon128 ascon(keyascon);
 
 	std::vector<uint8_t> plaintext{ plaintext_1.begin(), plaintext_1.end() };
 	std::vector<uint8_t> ad(ad_1.begin(), ad_1.end());
