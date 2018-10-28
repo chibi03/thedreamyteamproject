@@ -5,6 +5,7 @@
 #include <vector>
 #include "../counter.h"
 #include "../aes128gcm.h"
+#include "../ascon128.h"
 #include "../hkdf.h"
 #include "../../utils/tests.h"
 #include "../endian.h"
