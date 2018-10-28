@@ -124,6 +124,7 @@ START_TEST(empty_label_hkdf){
     }
 }
 END_TEST
+
 START_TEST(nonce_ascon)
 {
 	incrementing_nonce nonce(ascon_nonce);
@@ -136,10 +137,11 @@ START_TEST(nonce_ascon)
 	std::vector<uint8_t> ciphertext;
 	const bool res = ascon.encrypt(ciphertext, plaintext, nonce.nonce(), ad);
 
-	ck_assert_uint_eq(res, false);
+	ck_assert_uint_eq(res, true);
 
 }
 END_TEST
+
 int main(int argc, char **argv) {
     Suite *suite = suite_create("Student Task 1 Tests");
     TCase* tcase = tcase_create("Student Task 1 Tests");
