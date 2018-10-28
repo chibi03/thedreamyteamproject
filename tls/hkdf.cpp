@@ -4,10 +4,11 @@
 #include <math.h>
 #include <iostream>
 #include "../utils/utils.h"
+#include <bitset>
 
 struct HkdfLabel {
   uint16_t length;
-  std::string label;
+  std::vector<uint8_t> label;
   std::vector<uint8_t> context;
 } hkdflabel;
 
@@ -26,10 +27,7 @@ hkdf::hkdf(const std::vector<uint8_t> &salt, const std::vector<uint8_t> &ikm) {
   hmac.update(ikm.data(), ikm.size());
   hmac::digest_storage prk = hmac.digest();
 
-  std::cout << util::to_hex_string(hmac.digest());
-
   std::copy(prk.begin(), prk.end(), this->h_key);
-  std::cout << "Hash length: " << sizeof(this->h_key) << std::endl;
 }
 
 hkdf::hkdf(const std::vector<uint8_t> &prk) {
@@ -39,7 +37,6 @@ hkdf::hkdf(const std::vector<uint8_t> &prk) {
   } else {
     std::copy(prk.begin(), prk.end(), this->h_key);
   }
-  std::cout << "Created HKDF 2" << std::endl;
 }
 
 /**
@@ -65,7 +62,6 @@ std::vector<uint8_t> hkdf::expand(const std::vector<uint8_t> &info, size_t len) 
     throw std::invalid_argument("The length has to be smaller or equal to HashLen * 255.");
   }
 
-  std::cout << "Expanding HKDF" << std::endl;
   int N = ceil(((float) len/(float) sizeof(this->h_key)));
 
   hmac hmac(this->h_key, sizeof(this->h_key));
@@ -79,9 +75,7 @@ std::vector<uint8_t> hkdf::expand(const std::vector<uint8_t> &info, size_t len) 
     okm.insert(okm.end(), T.begin(), T.end());
   }
 
-  std::cout << "Size of OKM: " << okm.size() << std::endl;
   okm.resize(len);
-  std::cout << "Size of OKM after shrink: " << okm.size() << std::endl;
   return okm;
 }
 
@@ -105,28 +99,47 @@ std::vector<uint8_t> hkdf::expand_helper(std::vector<uint8_t> &input,
     new_input.push_back(*it);
   }
 
-  std::cout << "Current new input length " << new_input.size() << std::endl;
   return new_input;
 }
 
 std::vector<uint8_t> hkdf::expand_label(const std::string &label,
                                         const std::vector<uint8_t> &context, size_t length) {
   /// \todo Implement HKDF-Expand-Label from TLS.
-
   if(label.empty()){
     throw std::invalid_argument("A label must be supplied");
   }
 
-  hkdflabel.length = hton<uint16_t>(length);
-  hkdflabel.label = "tls13 " + label;
+  hkdflabel.length = htob<uint16_t>(length);
   hkdflabel.context = context;
 
-  std::string tmp_label = std::to_string(hkdflabel.length) + hkdflabel.label;
-  for (unsigned int i = 0; i < hkdflabel.context.size(); i++) {
-    tmp_label += hkdflabel.context[i];
+  for (unsigned int i = 0; i < label.size(); ++i) {
+    hkdflabel.label.push_back(label[i]);
   }
 
-  std::vector<uint8_t> info(tmp_label.begin(), tmp_label.end());
+  std::string tmp_label = "tls13 ";
+
+  if((tmp_label.size() + hkdflabel.label.size()) < 7){
+    throw std::invalid_argument("The label must be at least 7 bytes large.");
+  }
+
+  std::vector<uint8_t> info;
+  info.resize(info.size() + sizeof(hkdflabel.length));
+  memcpy(&info[info.size() - sizeof(hkdflabel.length)], &hkdflabel.length, sizeof(hkdflabel.length));
+
+  info.push_back(htob<uint8_t>(hkdflabel.label.size() + tmp_label.size()) );
+  for (unsigned int i = 0; i < tmp_label.size(); ++i) {
+    info.push_back(tmp_label[i]);
+  }
+
+  for (unsigned int i = 0; i < hkdflabel.label.size(); ++i) {
+    info.push_back(hkdflabel.label[i]);
+  }
+
+  info.push_back(htob<uint8_t>(hkdflabel.context.size()));
+  for (unsigned int i = 0; i < hkdflabel.context.size(); ++i) {
+    info.push_back(hkdflabel.context[i]);
+  }
+
   return expand(info, length);
 }
 
@@ -145,3 +158,5 @@ std::vector<uint8_t> hkdf::derive_secret(const std::string &label,
 
   return expand_label(label, hashed_messages, hashed_messages.size());
 }
+
+

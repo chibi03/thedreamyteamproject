@@ -30,7 +30,7 @@ class hkdf {
 
   struct {
     uint16_t length;
-    std::string label;
+    std::vector<uint8_t> label;
     std::vector<uint8_t> context;
   } HkdfLabel;
 
