@@ -55,6 +55,7 @@ bool aes128gcm::encrypt(std::vector<uint8_t>& ciphertext, const std::vector<uint
     return false;
   }
   /// \todo Encrypt plaintext using AES-GCM with the given nonce and additional data.
+  uint8_t N = (int)ceil((float)plaintext.size()/(float)128);
   this->ciphertext.resize(plaintext.size() + additional_data.size());
 
   // Galois Multiplication
@@ -65,16 +66,34 @@ bool aes128gcm::encrypt(std::vector<uint8_t>& ciphertext, const std::vector<uint
   this->aes128.encrypt(e_counter_zero, nonce_data);
 
   // AES GMC
-  // TODO: for loop to go block size 128 rather than vector's indexes
-  for(unsigned int i = 0; i < plaintext.size(); i++) {
+  for(unsigned int i = 0; i < N; i++) {
+    std::vector sub_plaintext;
+    std::vector sub_ciphertext;
+    // Separate plaintext/ciphertexts into blocks of 128 bits (16 bytes)
+    for(auto p_it = plaintext.begin() + N * 16, 
+          auto c_it = ciphertext.begin() + N * 16, 
+            uint8_t i = 0; i < 16; p_it++, c_it++, i++) {
+      if(p_it = plaintext.end() || c_it == ciphertext.end()) {
+        break;
+      }
+      sub_plaintext.push_back(*p_it);
+      sub_ciphertext.push_back(*c_it);
+    }
     // increase counter
     nonce_data++;
     // encrypt the counter with our key
-    this->aes128.encrypt(ciphertext[i], nonce_data);
+    this->aes128.encrypt(sub_ciphertext, nonce_data);
     // ciphertext = encrypted_counter XOR plaintext
-    ciphertext[i] ^= plaintext[i];
+    sub_ciphertext ^= sub_plaintext;
     // tag = collection of ciphertexts XOR with previous tag
-    gmult(this->tag, ciphertext[i] ^ this->tag);
+    gmult(this->tag, sub_ciphertext ^ this->tag);
+
+    for(auto c_it = ciphertext.begin() + N * 16, 
+          auto tmp_c_it = sub_ciphertext.begin(); 
+            c_it != ciphertext.end() || tmp_c_it != sub_ciphertext; 
+              c_it++, tmp_c_it++ i++) {
+      *c_it = *tmp_c_it;
+    }
   }
   // gmult last element of tag = hash of concatenated additional_data and ciphertext size
   std::vector<uint8_t> sizes;
@@ -92,6 +111,7 @@ bool aes128gcm::decrypt(std::vector<uint8_t>& plaintext, const std::vector<uint8
                         const std::vector<uint8_t>& additional_data) const
 {
   /// \todo Decrypt ciphertext using AEs-GCM with the given nonce and additional data.
+  // TODO: Validate encryption with the tag
   bool res = encrypt(plaintext, ciphertext, nonce_data, additional_data);
 
   return res;
