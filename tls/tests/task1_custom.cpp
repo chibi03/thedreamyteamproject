@@ -5,6 +5,7 @@
 #include <vector>
 #include "../counter.h"
 #include "../aes128gcm.h"
+#include "../hkdf.h"
 #include "../../utils/tests.h"
 #include "../endian.h"
 #include <array>
@@ -40,7 +41,7 @@ using util::operator""_k;
 
 namespace {
     const aes128gcm::key_storage key = "AD7A2BD03EAC835A6F620FDCB506B345"_k;
-    const aes128gcm::key_storage key_invalid = "ER7A2OO03EAC835A6F620FDCB511B345"_k;
+    const aes128gcm::key_storage key_invalid = "AD7A2BD03EAC835A6F620FDCB506B346"_k;
     std::vector<uint8_t> nonce_data_1 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05,
                                         0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b};
     std::vector<uint8_t> nonce_data_2 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
@@ -94,12 +95,26 @@ START_TEST(constant_time_decrypt_check){
 
 END_TEST
 
+START_TEST(empty_label_hkdf){
+    const std::vector<uint8_t> salt = "0b0b0ba9a9a9a9a9"_x;
+    const std::vector<uint8_t> ikm  = "91726354"_x;
+    hkdf kdf_early_secret(salt, ikm);
+
+    try {
+        const std::vector<uint8_t> label = kdf_early_secret.expand_label("", "ab"_x, 16);
+    } catch (std::invalid_argument inv){
+        ck_assert_str_eq(inv.what() , "A label must be supplied");
+    }
+}
+END_TEST
+
 int main(int argc, char **argv) {
     Suite *suite = suite_create("Student Task 1 Tests");
     TCase* tcase = tcase_create("Student Task 1 Tests");
     tcase_set_timeout(tcase, 0);
     tcase_add_test(tcase, constant_time_decrypt_check);
     tcase_add_test(tcase, reset_nonce_diff_size);
+    tcase_add_test(tcase, empty_label_hkdf);
     // suite_add_tcase(suite, tcase);
 
     SRunner *suite_runner = srunner_create(suite);
