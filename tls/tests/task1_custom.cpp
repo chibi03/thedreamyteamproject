@@ -35,9 +35,12 @@
 // Run your defined test suite and verify the outcome.
 // You may look into some of our tests to get a feeling for the workflow.
 
+using util::operator""_x;
+using util::operator""_k;
+
 namespace {
-    //const aes128gcm::key_storage key = "AD7A2BD03EAC835A6F620FDCB506B345"_k;
-    //const aes128gcm::key_storage key_invalid = "ER7A2OO03EAC835A6F620FDCB511B345"_k;
+    const aes128gcm::key_storage key = "AD7A2BD03EAC835A6F620FDCB506B345"_k;
+    const aes128gcm::key_storage key_invalid = "ER7A2OO03EAC835A6F620FDCB511B345"_k;
     std::vector<uint8_t> nonce_data_1 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05,
                                         0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b};
     std::vector<uint8_t> nonce_data_2 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
@@ -56,9 +59,8 @@ START_TEST(reset_nonce_diff_size)
 END_TEST
 
 
-/*
 START_TEST(constant_time_decrypt_check){
-    incrementing_nonce nonce(nonce_data);
+    incrementing_nonce nonce(nonce_data_1);
     ++nonce;
     const auto n = nonce.nonce();
 
@@ -72,7 +74,9 @@ START_TEST(constant_time_decrypt_check){
     // execution with valid key
     auto start = std::chrono::high_resolution_clock::now();
     std::vector<uint8_t> plaintext_2;
-    res = aesgcm.decrypt(plaintext_2, ciphertext, n);
+
+    bool res = aesgcm.decrypt(plaintext_2, ciphertext, n);
+    ck_assert(res);
     auto finish = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = finish - start;
 
@@ -80,20 +84,21 @@ START_TEST(constant_time_decrypt_check){
     auto start1 = std::chrono::high_resolution_clock::now();
     std::vector<uint8_t> plaintext_3;
     res = aesgcm_inv.decrypt(plaintext_3, ciphertext, n);
+    ck_assert(res);
 
     auto finish1 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed1 = finish1 - start1;
 
-    ck_assert_str_eq(elapsed.count(), elapsed1.count());
+    //ck_assert_float_eq(elapsed.count(), elapsed1.count());
 }
 
 END_TEST
-*/
+
 int main(int argc, char **argv) {
     Suite *suite = suite_create("Student Task 1 Tests");
     TCase* tcase = tcase_create("Student Task 1 Tests");
     tcase_set_timeout(tcase, 0);
-    //tcase_add_test(tcase, custom_1);
+    tcase_add_test(tcase, constant_time_decrypt_check);
     tcase_add_test(tcase, reset_nonce_diff_size);
     // suite_add_tcase(suite, tcase);
 
