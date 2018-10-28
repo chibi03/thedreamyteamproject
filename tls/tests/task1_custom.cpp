@@ -46,6 +46,18 @@ namespace {
                                         0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b};
     std::vector<uint8_t> nonce_data_2 = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
                                        0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
+
+	const ascon128::key_storage keyascon = "ffffffffffffffffffffffffffffffff"_k;
+	const std::vector<uint8_t> ascon_nonce = "00010203040c0d0e0f"_x;
+
+	const std::string plaintext_1 = "abcdefghijklmnoqrstuvwxyz0123456789ABCDEFGHIJKLMNOQRSTUVWXYZ";
+	const std::string ad_1 = util::to_hex_string(plaintext_1);
+	const std::vector<uint8_t> expected_1 =
+		"7fc2b392364bcfe8fbc6417889e1c908beebf6e7378f96065df6616e10eb"
+		"c798f1180f8d9188c8e4672558381fb18e4165aea627fcc9f18c8a8f54e7"
+		"05615a12a7d5ef18b494b75eeca98879"_x;
+
+
 }
 
 START_TEST(reset_nonce_diff_size)
@@ -107,7 +119,22 @@ START_TEST(empty_label_hkdf){
     }
 }
 END_TEST
+START_TEST(nonce_ascon)
+{
+	incrementing_nonce nonce(nonce_data);
+	++nonce;
 
+	ascon128 ascon(key);
+
+	std::vector<uint8_t> plaintext{ plaintext_1.begin(), plaintext_1.end() };
+	std::vector<uint8_t> ad(ad_1.begin(), ad_1.end());
+	std::vector<uint8_t> ciphertext;
+	const bool res = ascon.encrypt(ciphertext, plaintext, nonce.nonce(), ad);
+
+	ck_assert_uint_eq(res, false);
+
+}
+END_TEST
 int main(int argc, char **argv) {
     Suite *suite = suite_create("Student Task 1 Tests");
     TCase* tcase = tcase_create("Student Task 1 Tests");
@@ -115,7 +142,8 @@ int main(int argc, char **argv) {
     tcase_add_test(tcase, constant_time_decrypt_check);
     tcase_add_test(tcase, reset_nonce_diff_size);
     tcase_add_test(tcase, empty_label_hkdf);
-    // suite_add_tcase(suite, tcase);
+	tcase_add_test(tcase, nonce_ascon);
+    suite_add_tcase(suite, tcase);
 
     SRunner *suite_runner = srunner_create(suite);
     srunner_run(suite_runner, argc, argv);
