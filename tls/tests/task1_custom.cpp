@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
     Suite *suite = suite_create("Student Task 1 Tests");
     TCase* tcase = tcase_create("Student Task 1 Tests");
     tcase_set_timeout(tcase, 0);
-    /tcase_add_test(tcase, constant_time_decrypt_check);
+    tcase_add_test(tcase, constant_time_decrypt_check);
     tcase_add_test(tcase, reset_nonce_diff_size);
     tcase_add_test(tcase, empty_label_hkdf);
 	tcase_add_test(tcase, key_nonce_ascon);

@@ -18,7 +18,7 @@ private:
   std::vector<uint8_t> tag;
   aes128 aes128_memb;
 
-//  void gmult(std::vector<uint8_t> tag, std::vector<uint8_t> data);
+  void gmult(std::vector<uint8_t> tag, std::vector<uint8_t> data);
 
 public:
   static constexpr std::size_t nonce_size = 12;
@@ -41,6 +41,9 @@ public:
   bool decrypt(std::vector<uint8_t>& plaintext, const std::vector<uint8_t>& ciphertext,
                const std::vector<uint8_t>& nonce_data,
                const std::vector<uint8_t>& additional_data = std::vector<uint8_t>()) const override;
+
+  void gmult(std::vector<uint8_t>& tag, std::vector<uint8_t>& data);
+
 };
 
 #endif // AES128GCM_H

@@ -44,17 +44,18 @@ void aes128gcm::set_key(const key_storage& key)
   this->aes128_memb.set_key(this->key.data());
 }
 
-//void aes128gcm::gmult(std::vector<uint8_t>& tag, std::vector<uint8_t>& data) {
+void aes128gcm::gmult(std::vector<uint8_t>& tag, std::vector<uint8_t>& data) {
 //  //TODO: GMULT the last element of the tag with the data and append to the tag vector
-//}
+}
 
 bool aes128gcm::encrypt(std::vector<uint8_t>& ciphertext, const std::vector<uint8_t>& plaintext,
                         const std::vector<uint8_t>& nonce_data,
                         const std::vector<uint8_t>& additional_data) const
 {
-//  if(plaintext.empty() || nonce_data.empty()) {
-//    return false;
-//  }
+  if(plaintext.empty() || nonce_data.empty()) {
+    return false;
+  }
+
 //  /// \todo Encrypt plaintext using AES-GCM with the given nonce and additional data.
 //  uint8_t N = (int)ceil((float)plaintext.size()/(float)128);
 //  this->ciphertext.resize(plaintext.size() + additional_data.size());
