@@ -15,10 +15,10 @@ private:
   std::vector<uint8_t> plaintext;
   std::vector<uint8_t> ciphertext;
   std::vector<uint8_t> random_data;
-  std::std::vector<uint8_t> tag;
-  aes128::aes128 aes128;
+  std::vector<uint8_t> tag;
+  aes128 aes128_memb;
 
-  void gmult(std::vector<uint8_t> tag, std::vector data);
+//  void gmult(std::vector<uint8_t> tag, std::vector<uint8_t> data);
 
 public:
   static constexpr std::size_t nonce_size = 12;
