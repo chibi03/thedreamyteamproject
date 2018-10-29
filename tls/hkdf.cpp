@@ -1,5 +1,6 @@
 #include "hkdf.h"
 #include "hmac-sha2.h"
+#include "sha2.h"
 #include "endian.h"
 #include <math.h>
 #include <iostream>
@@ -146,17 +147,16 @@ std::vector<uint8_t> hkdf::expand_label(const std::string &label,
 std::vector<uint8_t> hkdf::derive_secret(const std::string &label,
                                          const std::vector<uint8_t> &messages) {
   /// \todo Implement Derive-Secret from TLS.
-  hmac transcript_hash(this->h_key, sizeof(this->h_key));
-  transcript_hash.update(messages.data(), messages.size());
+  sha2 hash;
+  hash.update(messages.data(), messages.size());
 
-  hmac_sha2::digest_storage digest = transcript_hash.digest();
+  sha2::digest_storage digest = hash.digest();
   std::vector<uint8_t> hashed_messages;
 
-  for (auto it = digest.begin(); it!=digest.end(); ++it) {
-    hashed_messages.push_back(*it);
-  }
+  hashed_messages.resize(hashed_messages.size() + sizeof(digest));
+  memcpy(&hashed_messages[hashed_messages.size() - sizeof(digest)], &digest, sizeof(digest));
 
-  return expand_label(label, hashed_messages, hashed_messages.size());
+  return expand_label(label, hashed_messages, sha2::digest_size);
 }
 
 
