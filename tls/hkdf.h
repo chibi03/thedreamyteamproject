@@ -4,7 +4,6 @@
 #include "hmac-sha2.h"
 #include <string>
 #include <vector>
-#include <iostream>
 
 /// HKDF using HMAC-SHA256 according to RFC 5869
 class hkdf {

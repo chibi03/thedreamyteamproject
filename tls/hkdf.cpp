@@ -3,9 +3,7 @@
 #include "sha2.h"
 #include "endian.h"
 #include <math.h>
-#include <iostream>
 #include "../utils/utils.h"
-#include <bitset>
 
 struct HkdfLabel {
   uint16_t length;
