@@ -26,8 +26,8 @@ public:
   std::vector<uint8_t> compute_early_secrets(const std::vector<uint8_t>& psk,
                                              const std::vector<uint8_t>& messages);
   /// Compute handshake traffic keys from internally stored early secret, DHE shared secret and
-  /// messages. Store and return the derived secret for application data traffic keys, and also set
-  /// up pending read and write state with those keys.
+  /// messages. Store and return the derived secret for computing application data traffic keys, and
+  /// also set up pending read and write state with those keys.
   std::vector<uint8_t> compute_handshake_traffic_keys(const std::vector<uint8_t>& dhe,
                                                       const std::vector<uint8_t>& messages);
   /// Compute application data traffic keys from internally stored secret and messages. Also set up
