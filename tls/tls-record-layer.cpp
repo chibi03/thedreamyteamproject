@@ -294,6 +294,10 @@ tls_record_layer::compute_handshake_traffic_keys(const std::vector<uint8_t>& dhe
 {
   /// \todo compute the handshake traffic keys and initialise pending_read/write_state.cipher, see
   /// Sections 7.1 & 7.3
+  ///
+  /// Note that security_params.entity defines if this record layer instance is associated to a
+  /// client or a server. pending_read/write_state.cipher can be updated using cipher.reset(new
+  /// tls13_ascon(...)) or cipher.reset(new tls13_aes128gcm(...))
   return {};
 }
 
