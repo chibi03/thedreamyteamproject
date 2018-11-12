@@ -30,12 +30,13 @@ public:
 
   virtual ~tls13_cipher();
 
-  /// Create an encrypted record for the given plaintext.
+  /// Create an encrypted record for the given plaintext. If successful, this function increments
+  /// the internal nonce.
   virtual record encrypt(content_type type, const std::vector<uint8_t>& plaintext) = 0;
 
   /// Decrypt an encrypted record and store the data in plaintext iff the record
   /// can be decrypted and verified. The content type of the decrypted fragment will be stored in
-  /// type.
+  /// type. If successful, this function increments the internal nonce.
   virtual bool decrypt(const record& record, std::vector<uint8_t>& plaintext,
                        content_type& type)                                         = 0;
 
