@@ -7,6 +7,7 @@
 #include <iosfwd>
 #include <map>
 #include <vector>
+#include <string>
 
 typedef std::map<std::string, std::vector<uint8_t>> psk_map;
 
