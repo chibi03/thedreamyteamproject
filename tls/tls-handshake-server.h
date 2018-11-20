@@ -7,7 +7,6 @@
 #include "ecdh.h"
 #include "tls-record-layer.h"
 #include "tls.h"
-#include "hkdf.h"
 
 /// Server side of the handshake
 class tls_handshake_server {
