@@ -240,11 +240,14 @@ alert_location tls_record_layer::read(content_type type, std::vector<uint8_t>& d
     while (handshake_messages.size() - hm_offset < length)
     {
       const auto alert = read(TLS_HANDSHAKE);
-      if (!alert && alert.location == remote)
+      if (!alert)
       {
-        // Remote alert, so we won't receive any more data.
-        boost::system::error_code ec;
-        socket_.shutdown(tcp::socket::shutdown_receive, ec);
+        if (alert.location == remote)
+        {
+          // Remote alert, so we won't receive any more data.
+          boost::system::error_code ec;
+          socket_.shutdown(tcp::socket::shutdown_receive, ec);
+        }
         return alert;
       }
     }
@@ -267,11 +270,14 @@ alert_location tls_record_layer::read(content_type type, std::vector<uint8_t>& d
            (application_data.size() == ad_offset))
     {
       const auto alert = read(TLS_APPLICATION_DATA);
-      if (!alert && alert.location == remote)
+      if (!alert)
       {
-        // Remote alert, so we won't receive any more data.
-        boost::system::error_code ec;
-        socket_.shutdown(tcp::socket::shutdown_receive, ec);
+        if (alert.location == remote)
+        {
+          // Remote alert, so we won't receive any more data.
+          boost::system::error_code ec;
+          socket_.shutdown(tcp::socket::shutdown_receive, ec);
+        }
         return alert;
       }
     }
