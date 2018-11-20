@@ -94,8 +94,21 @@ END_TEST
 
 namespace
 {
-  void encrypted_message(const content_type type)
+  const std::array<std::vector<uint8_t>, 16> expected_ciphertexts{
+      "1b90db4dfe6d42069eb5255e5259c917051f"_x, "1d78d428f90289e0b1458d8d727b2591c702"_x,
+      "e359caad9c907ab79666aadcda9b57a32f14"_x, "d9ad6ff0bc22207879f1bd13d06352f6f2f0"_x,
+      "d9dfc5b8affd560af0f66d7631ef736c67f4"_x, "1f595e895b4e7d0d7bbc9dc05627b4d0f419"_x,
+      "e1d342cea7dd6b3d527722818bd3fdd78be7"_x, "750f95dfbc589c33b9147f4d27b2f4651e7d"_x,
+      "61081c1d9cd0fd5c05a65ed021335eaab723"_x, "31dcb55e5e5e9bc9cacca175a37991eb8d02"_x,
+      "55f648235e3c97ebc601df1ce10dccbd5a8f"_x, "ec792e5fd3714587c486ccd59a7f78359655"_x,
+      "c175c723b1d6ace7ce2fb687f4272348c5bc"_x, "f67a8213fe068f8623e66417d68f23d40def"_x,
+      "cf21c17709586f952c20cd5a43af06715ff0"_x, "6b860b005f9c694d13238c738144ccd473d5"_x};
+
+  void encrypted_message(const content_type type, bool test_header_type,
+                         bool check_expected_ciphertext)
   {
+    size_t ecc = type == TLS_HANDSHAKE ? 0 : 8;
+
     boost::asio::io_service io_service;
     for (const cipher_suite cs : {TLS_ASCON_128_SHA256, TLS_AES_128_GCM_SHA256})
     {
@@ -118,16 +131,25 @@ namespace
       activate(client_record_layer);
       activate(server_record_layer);
 
-      for (unsigned int r = 0; r < 2; ++r)
+      for (unsigned int r = 0; r < 2; ++r, ecc += 2)
       {
         // encrypt
         tls13_cipher::record record1, record2;
         bool ret = client_record_layer.encrypt(type, "ab"_x, record1);
         ck_assert_uint_eq(ret, true);
         ck_assert_uint_ne(record1.ciphertext.size(), 1);
+        if (test_header_type)
+          ck_assert_uint_eq(record1.header.type, TLS_APPLICATION_DATA);
+        if (check_expected_ciphertext)
+          ck_assert_array_split_eq(record1.ciphertext, expected_ciphertexts[ecc]);
+
         ret = server_record_layer.encrypt(type, "cd"_x, record2);
         ck_assert_uint_eq(ret, true);
         ck_assert_uint_ne(record2.ciphertext.size(), 1);
+        if (test_header_type)
+          ck_assert_uint_eq(record2.header.type, TLS_APPLICATION_DATA);
+        if (check_expected_ciphertext)
+          ck_assert_array_split_eq(record2.ciphertext, expected_ciphertexts[ecc + 1]);
 
         // decrypt
         std::vector<uint8_t> plain1, plain2;
@@ -148,13 +170,37 @@ namespace
 
 START_TEST(record_layer_handshake_encrypted)
 {
-  encrypted_message(TLS_HANDSHAKE);
+  encrypted_message(TLS_HANDSHAKE, false, false);
 }
 END_TEST
 
 START_TEST(record_layer_application_data_encrypted)
 {
-  encrypted_message(TLS_APPLICATION_DATA);
+  encrypted_message(TLS_APPLICATION_DATA, false, false);
+}
+END_TEST
+
+START_TEST(record_layer_handshake_encrypted_type)
+{
+  encrypted_message(TLS_HANDSHAKE, true, false);
+}
+END_TEST
+
+START_TEST(record_layer_application_data_encrypted_type)
+{
+  encrypted_message(TLS_APPLICATION_DATA, true, false);
+}
+END_TEST
+
+START_TEST(record_layer_handshake_encrypted_expected)
+{
+  encrypted_message(TLS_HANDSHAKE, false, true);
+}
+END_TEST
+
+START_TEST(record_layer_application_data_encrypted_expected)
+{
+  encrypted_message(TLS_APPLICATION_DATA, false, true);
 }
 END_TEST
 
@@ -169,6 +215,10 @@ int main(int argc, char** argv)
   tcase_add_test(tcase, record_layer_compute_handshake_derived_key);
   tcase_add_test(tcase, record_layer_handshake_encrypted);
   tcase_add_test(tcase, record_layer_application_data_encrypted);
+  tcase_add_test(tcase, record_layer_handshake_encrypted_type);
+  tcase_add_test(tcase, record_layer_application_data_encrypted_type);
+  tcase_add_test(tcase, record_layer_handshake_encrypted_expected);
+  tcase_add_test(tcase, record_layer_application_data_encrypted_expected);
   suite_add_tcase(suite, tcase);
 
   SRunner* suite_runner = srunner_create(suite);
