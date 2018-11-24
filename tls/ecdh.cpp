@@ -32,11 +32,44 @@ void ecdh::set_private_key(const gfp_t private_key)
 std::vector<uint8_t> ecdh::get_data() const
 {
   /// \todo Encode public key.
-  return {};
+    union{
+        uint8_t key[64];
+        uint32_t w[16];
+    }
+
+    memcpy(key, &public_key_, 64);
+    for (int i = 0; i <16; ++i)
+    {
+        w[i] = ntoh(w[i]);
+    }
+
+    std::vector<uint8_t> buf;
+
+    uint8_t legacy_form = 0x04;
+    buf.push_back(legacy_form);
+
+    for (int i = 0; i <64; ++i)
+    {
+        buf.push_back(key[i]);
+    }
+
+  return buf;
 }
 
 std::vector<uint8_t> ecdh::get_shared_secret(const std::vector<uint8_t>& other_party_data) const
 {
   /// \todo Decode second public key and run phase 2 of ECDH. Return the shared secret.
+    std::vector<uint8_t> buffer;
+
+    memcpy(&buffer, &other_party_data, other_party_data.size());
+    buffer.erase(buffer.begin(), buffer.begin() +1); //erasing the 0th byte with 0x04 value
+
+    eccp_point_affine_t newPub; //new point with x,y coords
+    eccp_point_affine_t oldPub //our data with x,y coords
+    memcpy(&newPub, &other_party_data, 64);
+    memcpy(&oldPub, &public_key_, 64);
+
+    ecdh_phase_two(&oldPub, private_key_, &newPub, param_);
+
   return {};
 }
