@@ -53,6 +53,48 @@ void tls_handshake_client::send_client_hello()
 /// If have_fixed_randomness_ is false generate random data.
 /// If it is true, use fixed_randomness_ as random data. In this case it is always 32 byte
 /// large.
+  random_struct rand;
+  if(!have_fixed_randomness_) {
+    get_random_data(rand.random_bytes, 32);
+  } else {
+    rand = this->fixed_randomness_;
+  }
+
+  std::vector<cipher_suite> cipher_suites;
+  cipher_suites.push_back(TLS_AES_128_GCM_SHA256);
+  cipher_suites.push_back(TLS_ASCON_128_SHA256);
+
+
+  std::vector<uint8_t> legacy_compression_method;
+  legacy_compression_method.push_back(1);
+  legacy_compression_method.push_back(0);
+
+  std::vector<uint8_t> data;
+  data.push_back(4);
+  data.push_back(TLSv1_3_MAJOR);
+  data.push_back(TLSv1_3_MINOR);
+
+  Extension ext;
+  ext.type = SUPPORTED_VERSIONS;
+  ext.data = data;
+
+  std::vector<Extension> extention;
+  extention.push_back(ext); 
+
+  HandshakePayload unghhhh;
+  unghhhh.legacy_version              = 0x1301;
+  unghhhh.random                      = rand;
+  unghhhh.legacy_session_id           = legacy_compression_method; // should be set by Server
+  unghhhh.cipher_suites               = cipher_suites;
+  unghhhh.legacy_compression_methods  = legacy_compression_method;
+  unghhhh.extentions                  = extention;
+
+  std::vector<uint8_t> payload;
+  payload.resize(sizeof(unghhhh));
+
+  memcpy(payload.data(), &unghhhh, sizeof(unghhhh));
+
+  this->layer_.write(TLS_HANDSHAKE, payload);
 }
 
 alert_location tls_handshake_client::read_server_hello()
