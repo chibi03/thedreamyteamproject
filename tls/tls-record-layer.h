@@ -59,6 +59,9 @@ public:
   bool encrypt(content_type type, const std::vector<uint8_t>& fragment,
                tls13_cipher::record& record);
 
+  std::vector <uint8_t> secret;
+
+
   /// Security parameters of the connection.
   struct security_parameters
   {

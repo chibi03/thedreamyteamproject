@@ -299,14 +299,12 @@ std::vector<uint8_t> tls_record_layer::compute_early_secrets(const std::vector<u
                                                              const std::vector<uint8_t>& messages)
 {
   /// \todo compute the early secrets, see Sections 7.1 & 7.3
-  std::vector <uint8_t> salt (32);
-  hkdf myhkdf(salt, psk);
-  std::vector <uint8_t> secret = myhkdf.derive_secret("derived", {});
-  std::cout << "secret is" << std::endl;
-    for (auto j : secret) {
-        std::cout << std::hex << (unsigned) j << ' ';
-    }
-  return secret;
+  std::vector <uint8_t> zerosalt (32);
+  hkdf myhkdf(zerosalt, psk);
+  secret = myhkdf.derive_secret("derived", {});
+  std::vector <uint8_t> _write_key = myhkdf.expand_label("client_early_traffic_secret", secret, secret.size());
+
+  return _write_key;
 }
 
 std::vector<uint8_t>
@@ -319,13 +317,21 @@ tls_record_layer::compute_handshake_traffic_keys(const std::vector<uint8_t>& dhe
   /// Note that security_params.entity defines if this record layer instance is associated to a
   /// client or a server. pending_read/write_state.cipher can be updated using cipher.reset(new
   /// tls13_ascon(...)) or cipher.reset(new tls13_aes128gcm(...))
-  return {};
+  hkdf myhkdf(dhe, secret);
+  secret = myhkdf.derive_secret("derived", messages);
+  std::vector <uint8_t> _write_key = myhkdf.expand_label("_handshake_traffic_secret", secret, secret.size());
+
+  return _write_key;
 }
 
 void tls_record_layer::compute_application_traffic_keys(const std::vector<uint8_t>& messages)
 {
   /// \todo compute the application traffic keys and initialise pending_read/write_state.cipher, see
   /// Sections 7.1 & 7.3
+  std::vector <uint8_t> zeropsk (32);
+  hkdf myhkdf(secret, zeropsk);
+  std::vector <uint8_t> _write_key = myhkdf.expand_label("_application_traffic_secret_N", secret, secret.size());
+
 }
 
 std::vector<uint8_t> tls_record_layer::get_finished_key(connection_end end)

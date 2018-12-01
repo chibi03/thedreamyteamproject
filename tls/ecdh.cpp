@@ -62,21 +62,12 @@ std::vector<uint8_t> ecdh::get_shared_secret(const std::vector<uint8_t>& other_p
   /// \todo Decode second public key and run phase 2 of ECDH. Return the shared secret.
     std::vector<uint8_t> buffer;
 
-    memcpy(&buffer, &other_party_data, sizeof(other_party_data));
-    //buffer.erase(buffer.begin(),buffer.begin()+1); ///erasing the 0th byte = 0x04
-
-    std::cout << " the buffer before conversion ";
-    for (auto j : buffer) {
-        std::cout << std::hex << (unsigned) j << ' ';
-    }
-    std::cout << " " << std::endl;
-
     union {
     uint8_t key[64];
     uint32_t w[16];
     };
     memcpy(key, &other_party_data, 64);  ///storing value to make conversion to network byte order
-    buffer.clear(); ///clear the buffer
+
     for (int i=0; i<16; ++i){
     w[i] = hton(w[i]);
     }
@@ -84,22 +75,14 @@ std::vector<uint8_t> ecdh::get_shared_secret(const std::vector<uint8_t>& other_p
     buffer.push_back(key[i]);
     }
 
-    std::cout << " the buffer after conversion ";
-    for (auto j : buffer) {
-        std::cout << std::hex <<(unsigned)j << ' ';
-    }
-    std::cout << " " << std::endl;
-
     eccp_point_affine_t newPub;  ///creating and filling new point for x,y coords from other party
     memcpy(&newPub.x, &buffer, 32);
     memcpy(&newPub.y, &buffer[buffer.size() / 2], 32);
-    newPub.identity = 0x00;
-    eccp_point_affine_t oldPub;  ///copying our public key
+    newPub.identity = 0;
+    eccp_point_affine_t newnenw;
 
-    ecdh_phase_two(&oldPub, private_key_, &newPub, &param_);
-    buffer.clear();
-    memcpy(&buffer, &oldPub, sizeof(oldPub));
-
+    ecdh_phase_two(&newnenw, private_key_, &newPub, &param_);
 
     return buffer;
 }
+
