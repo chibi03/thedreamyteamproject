@@ -204,6 +204,16 @@ struct Extension
 {
   ExtensionType type;
   std::vector<uint8_t> data;
+
+  bool operator==(const Extension& b) const
+  {
+    return type == b.type;
+  }
+
+  bool operator!=(const Extension& b) const
+  {
+    return type != b.type;
+  }
 };
 
 struct HandshakePayload

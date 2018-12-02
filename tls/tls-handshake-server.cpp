@@ -42,8 +42,13 @@ alert_location tls_handshake_server::process_extensions(std::vector<uint8_t> ext
     received.extentions.push_back(deserializedExt);
   }
 
-  if(received.extentions.back().type != PRE_SHARED_KEY){
-    return {local, illegal_parameter};
+  // If the preshared key extension is sent by the client, it has to be sent at the end.
+  Extension presharedkey;
+  presharedkey.type = PRE_SHARED_KEY;
+  if(std::find(received.extentions.begin(), received.extentions.end(), presharedkey) != received.extentions.end()){
+    if(received.extentions.back().type != PRE_SHARED_KEY){
+      return {local, illegal_parameter};
+    }
   }
 
   return {local, ok};
@@ -136,7 +141,38 @@ void tls_handshake_server::send_server_hello() {
   handshakeData.legacy_session_id = received.legacy_session_id;
   handshakeData.legacy_compression_methods = {0};
   handshakeData.cipher_suites = std::vector<cipher_suite>{received.cipher_suites.front()};
-  handshakeData.extentions = ;
+
+  std::vector<Extension> send_ext;
+
+  //respond to extensions
+  Extension keyShare;
+  Extension preSharedKey;
+  Extension supported_versions;
+
+  std::vector<Extension> received_ext = received.extentions;
+  for(unsigned int i = 0; i< received_ext.size(); i++){
+    ExtensionType type = received_ext[i].type;
+
+    switch (type){
+      case SUPPORTED_VERSIONS:
+        //select_supported_version();
+        break;
+      case SUPPORTED_GROUPS:
+        //select_supported_group();
+        break;
+      case PRE_SHARED_KEY:
+        //process_psk();
+        break;
+      case PSK_KEY_EXCHANGE_MODES:
+        //select_psk_exchange_mode();
+        break;
+      case KEY_SHARE:
+        break;
+    }
+
+  }
+
+  handshakeData.extentions = send_ext;
 
   std::vector<uint8_t> payload; // the complete handshake message
   memcpy(payload.data(), &handshakeData, sizeof(handshakeData));
