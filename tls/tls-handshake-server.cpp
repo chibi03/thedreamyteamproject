@@ -3,6 +3,8 @@
 #include "endian.h"
 #include "hkdf.h"
 #include "hmac-sha2.h"
+#include "random.h"
+
 
 
 tls_handshake_server::tls_handshake_server(tls_record_layer &layer, const psk_map &psks)
@@ -40,6 +42,10 @@ alert_location tls_handshake_server::process_extensions(std::vector<uint8_t> ext
     received.extentions.push_back(deserializedExt);
   }
 
+  if(received.extentions.back().type != PRE_SHARED_KEY){
+    return {local, illegal_parameter};
+  }
+
   return {local, ok};
 }
 
@@ -50,7 +56,7 @@ alert_location tls_handshake_server::read_client_hello() {
   alert_location
       alert = layer_.read(TLS_HANDSHAKE, data, sizeof(handshake_message_header), true); // should it really block?
 
-  if (alert) {
+  if (!alert) {
     return {local, handshake_failure};
   }
 
@@ -75,9 +81,12 @@ alert_location tls_handshake_server::read_client_hello() {
   uint8_t legacy_session_id_length(ntoh(data[index]));
   if (legacy_session_id_length > 32) {
     return {local, handshake_failure};
+  } else if(legacy_session_id_length > 0 ){
+    // compatiblity mode, here a session id is provided as specified in RFC 8446 Appendix D.4
+    memcpy(received.legacy_session_id.data(), &data[++index], legacy_session_id_length);
   }
+  index += legacy_session_id_length;
 
-  index += legacy_session_id_length; //used by Versions of TLS before TLS 1.3, therefore no need to process
 
   //check cipher suites that are supported
   uint8_t cipher_suite_length = ntoh(data[index]);
@@ -85,11 +94,15 @@ alert_location tls_handshake_server::read_client_hello() {
     return {local, handshake_failure};
   }
 
-  cipher_suite supported = {data[index++], data[index++]};
-  if (supported!=TLS_AES_128_GCM_SHA256 && supported!=TLS_ASCON_128_SHA256) {
+  index += 2; //as the length has 2 bytes to store the max length of the cipher suites
+
+  std::vector<uint8_t> supported_cipher_suites (&data[index], &data[index+cipher_suite_length]);
+  std::vector<cipher_suite> supported = get_cipher_suites(supported_cipher_suites);
+
+  if ((std::find(supported.begin(), supported.end(), TLS_AES_128_GCM_SHA256) == supported.end()) && (std::find(supported.begin(), supported.end(), TLS_ASCON_128_SHA256) == supported.end())) {
     return {local, handshake_failure}; //check if error correct
   }
-  received.cipher_suites = {};
+  received.cipher_suites = supported;
 
   uint8_t legacy_compression_methods_length = ntoh(data[index++]);
   // If the client is using TLS 1.2 the compression handling needs to be processed
@@ -113,12 +126,22 @@ void tls_handshake_server::send_server_hello() {
 /// If have_fixed_randomness_ is false, generate random data.
 /// If it is true, use fixed_randomness_ as random data.
 
-  struct protocol_version legacy_version = TLSv1_2;
 
+  random_struct randomVal = {};
+  get_random_data(randomVal.random_bytes, 32);
 
+  HandshakePayload handshakeData;
+  handshakeData.random = randomVal;
+  handshakeData.legacy_version = make_uint16(TLSv1_2_MAJOR, TLSv1_2_MINOR);
+  handshakeData.legacy_session_id = received.legacy_session_id;
+  handshakeData.legacy_compression_methods = {0};
+  handshakeData.cipher_suites = std::vector<cipher_suite>{received.cipher_suites.front()};
+  handshakeData.extentions = ;
 
+  std::vector<uint8_t> payload; // the complete handshake message
+  memcpy(payload.data(), &handshakeData, sizeof(handshakeData));
 
-
+  this->layer_.write(TLS_HANDSHAKE, payload);
 }
 
 void tls_handshake_server::send_finished() {
@@ -143,3 +166,12 @@ alert_location tls_handshake_server::answer_handshake() {
   return read_finished();
 }
 
+std::vector<cipher_suite> tls_handshake_server::get_cipher_suites(std::vector<uint8_t> data){
+  std::vector<cipher_suite> cipher_suites = {};
+
+  for (unsigned int i = 0; i < data.size(); i+=2) {
+    cipher_suite elem = {data[i], data[i+1]};
+    cipher_suites.push_back(elem);
+  }
+  return cipher_suites;
+};

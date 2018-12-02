@@ -39,6 +39,7 @@ class tls_handshake_server {
   const bool have_fixed_randomness_;
 
   HandshakePayload received;
+  std::vector<cipher_suite> get_cipher_suites(std::vector<uint8_t> data);
   //hkdf hkdf_hashing;
 
   /**
