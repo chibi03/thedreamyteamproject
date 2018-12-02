@@ -6,6 +6,7 @@
 #include "endian.h"
 #include "tls-aesgcm.h"
 #include "tls-ascon.h"
+#include "hkdf.h"
 
 using boost::asio::ip::tcp;
 
