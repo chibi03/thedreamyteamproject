@@ -20,8 +20,8 @@ enum connection_end
 /// TLS version constants
 enum version_constants : uint8_t
 {
-  TLSv1_2_MAJOR = 3,
-  TLSv1_2_MINOR = 3,
+  TLSv1_2_MAJOR = 3, // hardcoded in tls-handshake-client.cpp
+  TLSv1_2_MINOR = 3, // if changed, change there as well
   TLSv1_3_MAJOR = 3,
   TLSv1_3_MINOR = 4
 };

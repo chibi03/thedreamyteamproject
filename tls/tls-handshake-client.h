@@ -43,6 +43,8 @@ private:
   /// Selected identities.
   std::vector<std::string> psk_identities_;
 
+  HandshakePayload h_payload_;
+
 };
 
 #endif // TLS_HANDSHAKE_CLIENT_H
