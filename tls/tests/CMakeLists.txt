@@ -36,7 +36,7 @@ foreach(idx RANGE 1 6)
 endforeach(idx)
 
 add_library(playback SHARED playback.cpp)
-target_link_libraries(playback Boost::boost Boost::system)
+target_link_libraries(playback utils Boost::boost Boost::system)
 
 add_definitions("-DSOURCE_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/\"")
 foreach(target IN ITEMS ecdh tls_record_layer tls_handshake task2_custom)

@@ -156,28 +156,16 @@ bool tls_record_layer::encrypt(content_type type, const std::vector<uint8_t>& fr
                                tls13_cipher::record& record)
 {
     record =current_write_state.cipher->encrypt(type,fragment);
-    write_to_socket(record.ciphertext);
-  /// \todo encrypt the message and write it to the socket
-  if(!record.ciphertext.empty()){
-      return true;
-  } else
-  {
-      return false;
-  }
+    return true;
 }
 
 bool tls_record_layer::decrypt(const tls13_cipher::record& record, std::vector<uint8_t>& plaintext,
                                content_type& type)
 {
-    if(current_read_state.cipher){
-        auto dec = current_read_state.cipher->decrypt(record, plaintext, type);
-        return dec;
-    } else{
-        plaintext = plaintext;
-        return false;
-    }
   /// \todo Decrypt the given record using the current read cipher if set, and extract the plaintext
   /// otherwise.
+    auto dec = current_read_state.cipher->decrypt(record, plaintext, type);
+    return dec;
 }
 
 alert_location tls_record_layer::decode_alert(const std::vector<uint8_t>& content) const
@@ -307,10 +295,14 @@ std::vector<uint8_t> tls_record_layer::compute_early_secrets(const std::vector<u
   /// \todo compute the early secrets, see Sections 7.1 & 7.3
   std::vector <uint8_t> zerosalt (32);
   hkdf myhkdf(zerosalt, psk);
-  secret = myhkdf.derive_secret("derived", {});
-  std::vector <uint8_t> _write_key = myhkdf.expand_label("client_early_traffic_secret", secret, secret.size());
+  secret = myhkdf.derive_secret("derived", messages);
+    for(unsigned i = 0; i < secret.size(); ++i) {
+    std::cout << std::hex << (unsigned)secret[i];
 
-  return _write_key;
+  }
+  std::cout<< " the end " << std::endl;
+
+  return secret;
 }
 
 std::vector<uint8_t>
@@ -323,20 +315,14 @@ tls_record_layer::compute_handshake_traffic_keys(const std::vector<uint8_t>& dhe
   /// Note that security_params.entity defines if this record layer instance is associated to a
   /// client or a server. pending_read/write_state.cipher can be updated using cipher.reset(new
   /// tls13_ascon(...)) or cipher.reset(new tls13_aes128gcm(...))
-  hkdf myhkdf(dhe, secret);
-  secret = myhkdf.derive_secret("derived", messages);
-  std::vector <uint8_t> _write_key = myhkdf.expand_label("_handshake_traffic_secret", secret, secret.size());
-
-  return _write_key;
+return {};
 }
 
 void tls_record_layer::compute_application_traffic_keys(const std::vector<uint8_t>& messages)
 {
   /// \todo compute the application traffic keys and initialise pending_read/write_state.cipher, see
   /// Sections 7.1 & 7.3
-  std::vector <uint8_t> zeropsk (32);
-  hkdf myhkdf(secret, zeropsk);
-  std::vector <uint8_t> _write_key = myhkdf.expand_label("_application_traffic_secret_N", secret, secret.size());
+
 
 }
 

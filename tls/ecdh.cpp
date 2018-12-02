@@ -8,8 +8,6 @@
 #include "random.h"
 #include "endian.h"
 
-#include <endian.h>
-
 #include <iostream>
 
 #define param (&param_)

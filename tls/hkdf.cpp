@@ -110,7 +110,8 @@ std::vector<uint8_t> hkdf::expand_label(const std::string &label,
 
   hkdflabel.length = htob<uint16_t>(length);
   hkdflabel.context = context;
-
+  hkdflabel.label.clear();
+  
   for (unsigned int i = 0; i < label.size(); ++i) {
     hkdflabel.label.push_back(label[i]);
   }
