@@ -11,7 +11,9 @@
 namespace util
 {
   std::vector<uint8_t> operator"" _x(const char* literal, size_t s);
+  std::vector<uint8_t> operator"" _b(const char* literal, size_t s);
   std::array<uint8_t, 16> operator""_k(const char* literal, size_t s);
+  std::array<uint8_t, 32> operator""_h(const char* literal, size_t s);
 
   template <class T>
   void to_hex_string(std::ostream& oss, const T& digest)

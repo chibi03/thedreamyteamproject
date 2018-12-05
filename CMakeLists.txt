@@ -64,6 +64,7 @@ add_subdirectory(utils)
 add_subdirectory(ascon)
 add_subdirectory(ecclib)
 add_subdirectory(tls)
+add_subdirectory(blockchain)
 
 message(STATUS "---------------------------------------------------------------------")
 message(STATUS "Configuration for ${CMAKE_PROJECT_NAME} done.")

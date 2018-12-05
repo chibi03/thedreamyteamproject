@@ -37,12 +37,29 @@ namespace util
     return r;
   }
 
+  std::vector<uint8_t> operator"" _b(const char* literal, size_t s)
+  {
+    return {literal, literal + s};
+  }
+
   std::array<uint8_t, 16> operator"" _k(const char* literal, size_t s)
   {
     if (s != 32)
       throw std::runtime_error("invalid literal length");
 
     std::array<uint8_t, 16> r;
+    for (size_t i = 0; i < s; i += 2, literal += 2)
+      r[i >> 1] = parse_hex(*literal, *(literal + 1));
+
+    return r;
+  }
+
+  std::array<uint8_t, 32> operator"" _h(const char* literal, size_t s)
+  {
+    if (s != 64)
+      throw std::runtime_error("invalid literal length");
+
+    std::array<uint8_t, 32> r;
     for (size_t i = 0; i < s; i += 2, literal += 2)
       r[i >> 1] = parse_hex(*literal, *(literal + 1));
 

@@ -253,6 +253,67 @@ void gfp_mult_two_mont(gfp_t res, const gfp_t a, const gfp_t b, const gfp_prime_
   gfp_mont_multiply(res, res, prime_data->r_squared, prime_data);
 }
 
+/**
+ * \brief Computes x given a = x^2 (mod p), if p = 3 (mod 4) (a blum prime).
+ *
+ * Computes one of the square roots x given a = x^2 (mod p) according
+ * to algorithm 3.36 on page 100 in Menezes, A. J., Van Oorschot, P. C.,
+ * Vanstone, S. A. (1996). Handbook of applied cryptography.
+ *
+ * Note that you will get one of the square roots of a. Maybe you need the
+ * other one, i.e. -x. This can be easily achieved by using the
+ * \ref gfp_gen_negate function.
+ *
+ * While the original algorithm is to compute a^((p+1)/4), which is
+ * equivalent to computing a^(k+1) for p = 4k + 3.
+ *
+ * Warning: This function does not check whether the given prime is a
+ * blum prime. Users of this function must make sure that the congruence
+ * p = 3 (mod 4) holds for the given prime.
+ *
+ * The following standard curves use primes that are blum primes:
+ *  - secp256r1
+ *  - secp521r1
+ *  - secp192r1
+ *  - secp384r1
+ *
+ * The following standard curves use primes that are not blum primes, so
+ * they **cannot** be used with this function.
+ *  - secp224r1
+ *
+ * To verify whether a prime can be used just check the congruence
+ * using your favorite CAS.
+ * E.g for secp245r1 using sage:
+ * <code>
+ * p = 0xFFFFFFFF00000001000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFF
+ * mod(p, 4) == 3
+ * </code>
+ *
+ * @param res the square root x of a = x^2 will be stored here. res and a may not overlap!
+ * @param a with a = x^2 (mod p)
+ * @param prime_data the prime p
+ */
+void gfp_mont_sqrt(gfp_t res, const gfp_t a, const gfp_prime_data_t *prime_data)
+{
+  gfp_t k = {0, }, tmp = {0, };
+  gfp_t three = {3, 0};
+
+  // first compute k: p = 4k + 3 ==> (p - 3) / 4 = k
+  // 4k = p - 3
+  gfp_gen_subtract(k, prime_data->prime, three, prime_data);
+  // 2k = (p - 3) / 2
+  gfp_gen_halving(tmp, k, prime_data);
+  // k = (p - 3) / 4
+  gfp_gen_halving(k, tmp, prime_data);
+
+  // compute k + 1
+  bigint_clear_var(tmp, WORDS_PER_GFP);
+  gfp_gen_add(tmp, k, bigint_one, prime_data);
+
+  // compute x = a^(k+1) (mod p)
+  gfp_mont_exponent(res, a, tmp, prime_data->words, prime_data);
+}
+
 void gfp_mont_square(gfp_t res, const gfp_t a, const gfp_prime_data_t* prime_data)
 {
   uint_t temp_product[2 * WORDS_PER_GFP] = {
