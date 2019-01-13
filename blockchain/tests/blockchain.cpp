@@ -329,7 +329,29 @@ START_TEST(testcase_16)
 }
 END_TEST
 
+// testcase 17: invalid commitment proof
 START_TEST(testcase_17)
+{
+  block_chain bc;
+  full_block genesis, fb;
+  {
+    std::ifstream is(SOURCE_DIR "genesis");
+    util::read(is, genesis);
+  }
+  {
+    std::ifstream is(SOURCE_DIR "testcase_17");
+    util::read(is, fb);
+  }
+
+  ck_assert_uint_eq(bc.size(), 0);
+  ck_assert_uint_eq(bc.add_block(genesis), true);
+  ck_assert_uint_eq(bc.size(), 1);
+  ck_assert_uint_eq(bc.add_block(fb), false);
+  ck_assert_uint_eq(bc.size(), 1);
+}
+END_TEST
+
+START_TEST(testcase_all)
 {
   block_chain bc;
   {
@@ -416,6 +438,7 @@ int main(int argc, char** argv)
   tcase_add_test(tcase, testcase_15);
   tcase_add_test(tcase, testcase_16);
   tcase_add_test(tcase, testcase_17);
+  tcase_add_test(tcase, testcase_all);
   suite_add_tcase(suite, tcase);
 
   tcase = tcase_create("Valid Blocks and Transactions");
