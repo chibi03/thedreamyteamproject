@@ -13,6 +13,12 @@ namespace blockchain
   /// Blockchain for KUcoin.
   class block_chain
   {
+  private:
+        std::vector<full_block> blocks;
+        sha2::digest_storage block_hash;
+        bool verify_root_hash(const full_block& fb);
+        std::array<uint8_t, 32UL> null_hash = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+
   public:
     /// Compute the difficulty based on the number of blocks.
     ///
