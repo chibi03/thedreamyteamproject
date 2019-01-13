@@ -1,6 +1,6 @@
 add_definitions("-DSOURCE_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/data/\"")
 add_definitions("-DGROUP_NUMBER=\"${GROUP_NUMBER}\"")
-foreach(target IN ITEMS ring-signature commitment merkletree blockchain attack)
+foreach(target IN ITEMS ring-signature commitment merkletree blockchain attack task3_custom)
   add_executable("test_${target}" "${target}.cpp")
   target_link_libraries("test_${target}" bc_primitives utils ${CHECK_LIBRARIES})
 
