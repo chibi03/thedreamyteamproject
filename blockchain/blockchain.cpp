@@ -50,14 +50,10 @@ namespace blockchain
     /// correctly.
     auto prev = fb.block.previous;
     auto root_hash = fb.block.root_hash;
-    //auto seed = sha2::digest_storage(fb.block.seed);
-
     auto hash = sha2();
     hash.update(prev.data(), sha2::digest_size);
     hash.update(root_hash.data(), sha2::digest_size);
-
     auto digest = hash.digest();
-
     for (size_t i = 0; i < difficulty(blocks.size()); i++) {
       if (digest[i] != 0) {
           return false;
@@ -71,10 +67,8 @@ namespace blockchain
   {
     /// \todo Verify signature and proof sotred in transaction input using given transaction output.
     auto hash = ti.transaction_hash;
-
     bool signature = rs_sha2_verify(to.ring, hash.begin(), hash.end(), ti.signature);
     bool proof = ac_verify_proof(to.commitment, to.amount, to.ring, ti.commitment_proof);
-
     return signature && proof;
   }
 
@@ -82,12 +76,9 @@ namespace blockchain
                                                        const uint8_t index) const
   {
     /// \todo Lookup a transaction output based on the transaction hash and output index.
-    transaction_input ti;
     transaction_output to;
-    for (auto i = 0; i<to.amount; i++)
-    {
-        if
-    }
+    transaction_input ti;
+
     return nullptr;
   }
 
@@ -129,7 +120,6 @@ namespace blockchain
       blocks.push_back(fb);
       return true;
     }
-
   }
 
   const full_block& block_chain::operator[](std::size_t index) const
@@ -144,13 +134,6 @@ namespace blockchain
     return blocks.size();
   }
 
-  bool verify_root_hash(const full_block& fb){
-
-    for(auto i = fb.transactions.begin(); i < fb.transactions.end(); i++) {
-
-    }
-
-  }
 
 
 } // namespace blockchain

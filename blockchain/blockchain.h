@@ -16,7 +16,6 @@ namespace blockchain
   private:
         std::vector<full_block> blocks;
         sha2::digest_storage block_hash;
-        bool verify_root_hash(const full_block& fb);
         std::array<uint8_t, 32UL> null_hash = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
   public:
@@ -24,7 +23,7 @@ namespace blockchain
     ///
     /// @param number_of_blocks current number of blocks in the chain
     /// @return current difficulty
-    static constexpr std::size_t difficulty(std::size_t number_of_blocks)
+    static const std::size_t difficulty(std::size_t number_of_blocks)
     {
       return static_cast<std::size_t>(std::log(number_of_blocks + 1) / std::log(100)) + 1;
     }
