@@ -10,6 +10,11 @@
 class merkle_tree
 {
 
+private:
+    std::vector<std::vector<sha2::digest_storage>> tree;
+    sha2::digest_storage root_hash_;
+    uint8_t num_levels;
+
 public:
   enum position
   {
