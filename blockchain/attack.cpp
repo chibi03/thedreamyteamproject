@@ -14,7 +14,7 @@ namespace blockchain
 
   rs_public_key deanonymize_spender(const std::string& blockchain_filename)
   {
-    std::vector<full_block> bc;
+    block_chain bc;
     if (!read_blockchain(bc, blockchain_filename)) {
       return {};
     }
@@ -26,17 +26,17 @@ namespace blockchain
     unsigned int average_ring_size;
 
     // Store the rings from transactions in a vector
-    for(unsigned int i = 0; i < bc.block_chain_data.size(); i++) {
-      if (bc.block_chain_data[i].transactions.size() > 0) {
-        for(unsigned int j = 0; j < bc.block_chain_data[i].transactions.size(); j++){
-          for(unsigned int k = 0; k < bc.block_chain_data[i].transactions[j].outputs.size(); k++) {
-            rs_ring x_ring = bc.block_chain_data[i].transactions[j].outputs[k].ring;
+    for(unsigned int i = 0; i < bc.size(); i++) {
+      if (bc[i].transactions.size() > 0) {
+        for(unsigned int j = 0; j < bc[i].transactions.size(); j++){
+          for(unsigned int k = 0; k < bc[i].transactions[j].outputs.size(); k++) {
+            rs_ring x_ring = bc[i].transactions[j].outputs[k].ring;
             rings.push_back(x_ring);
             average_ring_size += x_ring.size();
           }
         }
       }
-      if (i == bc.block_chain_data.size() - 1) {
+      if (i == bc.size() - 1) {
         average_ring_size /= ++i;
       }
     }
