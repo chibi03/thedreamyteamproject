@@ -156,7 +156,14 @@ bool tls_record_layer::encrypt(content_type type, const std::vector<uint8_t>& fr
                                tls13_cipher::record& record)
 {
   /// \todo encrypt the message
-  record = current_write_state.cipher->encrypt(type,fragment);
+  if(!current_write_state.cipher) {
+    record = tls13_cipher::record();
+
+    record.header = (record_layer_header){type, TLSv1_2, (uint16_t)fragment.size()};
+    record.ciphertext = fragment;
+  } else {
+    record = current_write_state.cipher->encrypt(type, fragment);
+  }
   return true;
 }
 
@@ -296,7 +303,7 @@ std::vector<uint8_t> tls_record_layer::compute_early_secrets(const std::vector<u
   /// \todo compute the early secrets, see Sections 7.1 & 7.3
   std::vector <uint8_t> zerosalt (32);
   hkdf myhkdf(zerosalt, psk);
-    e_secret = myhkdf.derive_secret("derived", messages);
+  e_secret = myhkdf.derive_secret("derived", messages);
 
   return e_secret;
 }
@@ -305,13 +312,46 @@ std::vector<uint8_t>
 tls_record_layer::compute_handshake_traffic_keys(const std::vector<uint8_t>& dhe,
                                                  const std::vector<uint8_t>& messages)
 {
+
   /// \todo compute the handshake traffic keys and initialise pending_read/write_state.cipher, see
   /// Sections 7.1 & 7.3
   ///
   /// Note that security_params.entity defines if this record layer instance is associated to a
   /// client or a server. pending_read/write_state.cipher can be updated using cipher.reset(new
   /// tls13_ascon(...)) or cipher.reset(new tls13_aes128gcm(...))
-  return {};
+
+  tls13_cipher::key_storage public_key, private_key;
+  
+  hkdf init_hkdf(e_secret, dhe);
+  s_hs_client = init_hkdf.derive_secret("c hs traffic", messages);
+  s_hs_server = init_hkdf.derive_secret("s hs traffic", messages);
+
+  hkdf hkey_client(s_hs_client), hkey_server(s_hs_server);
+  std::vector<uint8_t> key_client = hkey_client.expand_label("key", {}, security_params.key_length);
+  std::vector<uint8_t> key_server = hkey_server.expand_label("key", {}, security_params.key_length);
+
+  if(security_params.bulk_cipher == security_parameters::bulk_cipher_algorithm::ASCON){
+    bool flag = security_params.entity == connection_end::CLIENT ? true : false;
+    if(flag) {
+      memcpy(&public_key, key_client.data(), security_params.key_length);
+      memcpy(&private_key, key_server.data(), security_params.key_length);
+    } else {
+      memcpy(&public_key, key_server.data(), security_params.key_length);
+      memcpy(&private_key, key_client.data(), security_params.key_length);
+    }
+    std::vector<uint8_t> public_iv, private_iv;
+    public_iv = flag ?  hkey_client.expand_label("iv", {}, security_params.key_length) : hkey_server.expand_label("iv", {}, security_params.key_length);
+    private_iv = flag ? hkey_server.expand_label("iv", {}, security_params.key_length) : hkey_client.expand_label("iv", {}, security_params.key_length);
+    pending_write_state.cipher.reset(new tls13_ascon(public_key, public_iv));
+    pending_read_state.cipher.reset(new tls13_ascon(private_key, private_iv));
+  }
+
+
+  h_salt = init_hkdf.derive_secret("derived", {});
+
+  std::cout << "h_salt - " << h_salt.size() << std::endl;
+
+  return h_salt;
 }
 
 void tls_record_layer::compute_application_traffic_keys(const std::vector<uint8_t>& messages)
@@ -319,13 +359,57 @@ void tls_record_layer::compute_application_traffic_keys(const std::vector<uint8_
   /// \todo compute the application traffic keys and initialise pending_read/write_state.cipher, see
   /// Sections 7.1 & 7.3
 
+  tls13_cipher::key_storage public_key, private_key;
+
+  std::vector<uint8_t> ikm(sha2::digest_size, 0);
+  hkdf init_hkdf(h_salt, ikm);
+  std::vector<uint8_t> s_ap_client = init_hkdf.derive_secret("c ap traffic", messages);
+  std::vector<uint8_t> s_ap_server = init_hkdf.derive_secret("s ap traffic", messages);
+
+  std::vector<uint8_t> res_m_secret = init_hkdf.derive_secret("res master", messages);
+  std::vector<uint8_t> exp_m_secret = init_hkdf.derive_secret("exp master", messages);
+
+  hkdf hkey_client(s_ap_client);
+  std::vector<uint8_t> key_client = hkey_client.expand_label("key", {}, security_params.key_length);
+  hkdf hkey_server(s_ap_server);
+  std::vector<uint8_t> key_server = hkey_server.expand_label("key", {}, security_params.key_length);
+
+  if(security_params.bulk_cipher == security_parameters::bulk_cipher_algorithm::ASCON){
+    bool flag = security_params.entity == connection_end::CLIENT ? true : false;
+    std::vector<uint8_t> public_iv, private_iv;
+    if(flag) {
+      memcpy(&public_key, key_client.data(), security_params.key_length);
+      memcpy(&private_key, key_server.data(), security_params.key_length);
+    } else {
+      memcpy(&public_key, key_server.data(), security_params.key_length);
+      memcpy(&private_key, key_client.data(), security_params.key_length);
+    }
+    public_iv = flag ?  hkey_client.expand_label("iv", {}, security_params.key_length) : hkey_server.expand_label("iv", {}, security_params.key_length);
+    private_iv = flag ? hkey_server.expand_label("iv", {}, security_params.key_length) : hkey_client.expand_label("iv", {}, security_params.key_length);
+    pending_write_state.cipher.reset(new tls13_ascon(public_key, public_iv));
+    pending_write_state.cipher.reset(new tls13_ascon(private_key, private_iv));
+  }
+
 }
 
 std::vector<uint8_t> tls_record_layer::get_finished_key(connection_end end)
 {
   /// \todo Compute keys to create/verify Finished messages, see Section 4.4.4
 
-  return {};
+  std::vector<uint8_t> finished_key;
+
+    if (end == connection_end::CLIENT){
+        hkdf init_hkdf(s_hs_client);
+        finished_key = init_hkdf.expand_label("finished",{},32);
+        //finished_key = init_hkdf.derive_secret("finished",{}); //HKDF-Expand-Label(BaseKey, "finished", "", Hash.length)
+    }
+    if (end == connection_end::SERVER){
+        hkdf init_hkdf(s_hs_server);
+        finished_key = init_hkdf.expand_label("finished",{},32);
+        //finished_key = init_hkdf.derive_secret("finished",{}); //HKDF-Expand-Label(BaseKey, "finished", "", Hash.length)
+
+    }
+  return finished_key;
 }
 
 void tls_record_layer::write_to_socket(const std::vector<uint8_t>& data)

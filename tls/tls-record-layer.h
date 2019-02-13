@@ -86,6 +86,10 @@ public:
   //EARLY SECRET
   std::vector <uint8_t> e_secret;
 
+  std::vector<uint8_t> s_hs_client;
+  std::vector<uint8_t> s_hs_server;
+  std::vector<uint8_t> h_salt;
+
 private:
   static bool decode_header(record_layer_header& header, const std::vector<uint8_t>& data);
   static bool encode_header(std::vector<uint8_t>& data, const record_layer_header&);
