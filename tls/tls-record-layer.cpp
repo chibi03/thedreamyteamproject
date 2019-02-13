@@ -155,8 +155,9 @@ bool tls_record_layer::write_alert(AlertDescription alert)
 bool tls_record_layer::encrypt(content_type type, const std::vector<uint8_t>& fragment,
                                tls13_cipher::record& record)
 {
-    record =current_write_state.cipher->encrypt(type,fragment);
-    return true;
+  /// \todo encrypt the message
+  record = current_write_state.cipher->encrypt(type,fragment);
+  return true;
 }
 
 bool tls_record_layer::decrypt(const tls13_cipher::record& record, std::vector<uint8_t>& plaintext,
@@ -164,8 +165,8 @@ bool tls_record_layer::decrypt(const tls13_cipher::record& record, std::vector<u
 {
   /// \todo Decrypt the given record using the current read cipher if set, and extract the plaintext
   /// otherwise.
-    auto dec = current_read_state.cipher->decrypt(record, plaintext, type);
-    return dec;
+  auto dec = current_read_state.cipher->decrypt(record, plaintext, type);
+  return dec;
 }
 
 alert_location tls_record_layer::decode_alert(const std::vector<uint8_t>& content) const
@@ -295,14 +296,9 @@ std::vector<uint8_t> tls_record_layer::compute_early_secrets(const std::vector<u
   /// \todo compute the early secrets, see Sections 7.1 & 7.3
   std::vector <uint8_t> zerosalt (32);
   hkdf myhkdf(zerosalt, psk);
-  secret = myhkdf.derive_secret("derived", messages);
-    for(unsigned i = 0; i < secret.size(); ++i) {
-    std::cout << std::hex << (unsigned)secret[i];
+    e_secret = myhkdf.derive_secret("derived", messages);
 
-  }
-  std::cout<< " the end " << std::endl;
-
-  return secret;
+  return e_secret;
 }
 
 std::vector<uint8_t>
@@ -315,14 +311,13 @@ tls_record_layer::compute_handshake_traffic_keys(const std::vector<uint8_t>& dhe
   /// Note that security_params.entity defines if this record layer instance is associated to a
   /// client or a server. pending_read/write_state.cipher can be updated using cipher.reset(new
   /// tls13_ascon(...)) or cipher.reset(new tls13_aes128gcm(...))
-return {};
+  return {};
 }
 
 void tls_record_layer::compute_application_traffic_keys(const std::vector<uint8_t>& messages)
 {
   /// \todo compute the application traffic keys and initialise pending_read/write_state.cipher, see
   /// Sections 7.1 & 7.3
-
 
 }
 

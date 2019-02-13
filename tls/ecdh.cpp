@@ -37,50 +37,56 @@ std::vector<uint8_t> ecdh::get_data() const
   /// \todo Encode public key.
 
   union {
-  uint8_t key[64];
-  uint32_t w[16];
+    uint8_t key[64];
+    uint32_t w[16];
   };
   memcpy(key, &public_key_, 64);
   for (int i=0; i<16; ++i){
-  w[i] = ntoh(w[i]);
+    w[i] = ntoh(w[i]);
   }
 
   std::vector<uint8_t> buffer;
   uint8_t legacy_form = 4;
   buffer.push_back(legacy_form);
   for (int i=0; i<64; ++i){
-  buffer.push_back(key[i]);
+    buffer.push_back(key[i]);
   }
   return buffer;
-
 }
 
 std::vector<uint8_t> ecdh::get_shared_secret(const std::vector<uint8_t>& other_party_data) const
 {
   /// \todo Decode second public key and run phase 2 of ECDH. Return the shared secret.
-    std::vector<uint8_t> buffer;
+    eccp_point_affine_t point;
+    uint_t word_x, word_y = 0;
+    size_t point_size = sizeof(point.x)/ sizeof(point.x[0]);
 
-    union {
-    uint8_t key[64];
-    uint32_t w[16];
-    };
-    memcpy(key, &other_party_data, 64);  ///storing value to make conversion to network byte order
-
-    for (int i=0; i<16; ++i){
-    w[i] = hton(w[i]);
+    for(size_t i = 0; i < point_size; i++) {
+        for(int j = 3; j >= 0; j--) {
+            auto counter = 1 + (i*4) + (3-j);
+            auto add_x = (other_party_data[counter] << (j*8 & 0xFF));
+            auto add_y = (other_party_data[counter + (point_size*4)] << (j*8 & 0xFF));
+            word_x |= add_x;
+            word_y |= add_y;
+        }
+        point.x[i] = word_x;
+        point.y[i] = word_y;
+        word_x = word_y = 0;
     }
-    for (int i=0; i<64; ++i){
-    buffer.push_back(key[i]);
+
+    point.identity = 0;
+    eccp_point_affine_t shared_secret;
+
+    ecdh_phase_two(&shared_secret, private_key_, &point, &param_);
+
+    std::vector<uint8_t> secret;
+    for(size_t i = 0; i < point_size; i++) {
+        auto double_word = (int)shared_secret.x[i];
+        for(int j = sizeof(double_word)-1; j >= 0; j--) {
+            secret.push_back((double_word >> j*8) & 0xFF );
+        }
     }
 
-    eccp_point_affine_t newPub;  ///creating and filling new point for x,y coords from other party
-    memcpy(&newPub.x, &buffer, 32);
-    memcpy(&newPub.y, &buffer[buffer.size() / 2], 32);
-    newPub.identity = 0;
-    eccp_point_affine_t newnenw;
-
-    ecdh_phase_two(&newnenw, private_key_, &newPub, &param_);
-
-    return buffer;
+    return secret;
 }
 

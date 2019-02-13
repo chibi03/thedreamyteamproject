@@ -11,6 +11,7 @@
 /// encrypted based on the current state of the connection.
 class tls_record_layer
 {
+
 public:
   tls_record_layer(connection_end end, boost::asio::ip::tcp::socket&& socket);
   ~tls_record_layer();
@@ -59,9 +60,6 @@ public:
   bool encrypt(content_type type, const std::vector<uint8_t>& fragment,
                tls13_cipher::record& record);
 
-  std::vector <uint8_t> secret;
-
-
   /// Security parameters of the connection.
   struct security_parameters
   {
@@ -84,6 +82,9 @@ public:
   bool set_supported_cipher_suites(const cipher_suites& cs);
   /// Returns the list of supported cipher suites and their order of preference.
   const cipher_suites& get_supported_cipher_suites() const;
+
+  //EARLY SECRET
+  std::vector <uint8_t> e_secret;
 
 private:
   static bool decode_header(record_layer_header& header, const std::vector<uint8_t>& data);
@@ -130,6 +131,8 @@ private:
   std::vector<uint8_t> application_data;
 
   cipher_suites cipher_suites_{TLS_ASCON_128_SHA256, TLS_AES_128_GCM_SHA256};
+
+
 };
 
 #endif // TLS_RECORD_LAYER_H
