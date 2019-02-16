@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "tls-cipher.h"
+#include "counter.h"
 
 /// Oracle simulating application data record encryption and decryption for
 /// TLS 1.3 using ASCON as cipher suite.
@@ -19,6 +20,11 @@ public:
 
   record encrypt(content_type type, const std::vector<uint8_t>& plaintext);
   bool decrypt(const record& record, std::vector<uint8_t>& plaintext, content_type& type);
+
+private:
+    key_storage key_locker;
+    incrementing_nonce nonce = incrementing_nonce(std::vector<uint8_t> ());
+
 };
 
 #endif

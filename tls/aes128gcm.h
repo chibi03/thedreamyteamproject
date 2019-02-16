@@ -11,14 +11,12 @@
 class aes128gcm : public basic_ae<16, 16>
 {
 private:
-  std::vector<uint8_t> key;
-  std::vector<uint8_t> plaintext;
-  std::vector<uint8_t> ciphertext;
-  std::vector<uint8_t> random_data;
-  std::vector<uint8_t> tag;
-  aes128 aes128_memb;
-
-  void gmult(std::vector<uint8_t> tag, std::vector<uint8_t> data);
+  key_storage key_locker;
+  std::vector<uint8_t> hash_arg_calc (const std::vector<uint8_t>& additional_data, const std::vector<uint8_t> c) const;
+  std::array<uint8_t, 16>  increment(std::array<uint8_t, 16> const &bitstring) const;
+  std::vector<uint8_t> ghash(std::array<uint8_t, 16>const &H, std::vector<uint8_t>const &plaintext)const;
+  std::vector<uint8_t> gctr(std::array<uint8_t, 16>const &k, std::array<uint8_t, 16>const &c, std::vector<uint8_t>const &plaintext)const;
+  std::array<uint8_t, 16> multiply(std::array<uint8_t, 16>const &X, std::array<uint8_t, 16> const &Y)const;
 
 public:
   static constexpr std::size_t nonce_size = 12;
@@ -41,9 +39,6 @@ public:
   bool decrypt(std::vector<uint8_t>& plaintext, const std::vector<uint8_t>& ciphertext,
                const std::vector<uint8_t>& nonce_data,
                const std::vector<uint8_t>& additional_data = std::vector<uint8_t>()) const override;
-
-  void gmult(std::vector<uint8_t>& tag, std::vector<uint8_t>& data);
-
 };
 
 #endif // AES128GCM_H
