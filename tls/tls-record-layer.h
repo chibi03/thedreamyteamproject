@@ -83,13 +83,6 @@ public:
   /// Returns the list of supported cipher suites and their order of preference.
   const cipher_suites& get_supported_cipher_suites() const;
 
-  //EARLY SECRET
-  std::vector <uint8_t> e_secret;
-
-  std::vector<uint8_t> s_hs_client;
-  std::vector<uint8_t> s_hs_server;
-  std::vector<uint8_t> h_salt;
-
 private:
   static bool decode_header(record_layer_header& header, const std::vector<uint8_t>& data);
   static bool encode_header(std::vector<uint8_t>& data, const record_layer_header&);
@@ -135,7 +128,15 @@ private:
   std::vector<uint8_t> application_data;
 
   cipher_suites cipher_suites_{TLS_ASCON_128_SHA256, TLS_AES_128_GCM_SHA256};
+  
+  std::vector<uint8_t> e_secret;
 
+  std::vector<uint8_t>  h_salt;
+  std::vector<uint8_t>  s_hs_client;
+  std::vector<uint8_t>  s_hs_server;
+  
+  void party_cipher_init(const std::vector<uint8_t>& client, const std::vector<uint8_t>& server);    
+  
 
 };
 

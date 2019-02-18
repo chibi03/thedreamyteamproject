@@ -64,9 +64,10 @@ void tls_handshake_client::send_client_hello()
   cipher_suites.push_back(TLS_AES_128_GCM_SHA256);
   cipher_suites.push_back(TLS_ASCON_128_SHA256);
 
+  std::vector<uint8_t> legacy_session_id;
+  legacy_session_id.push_back(0);
 
   std::vector<uint8_t> legacy_compression_method;
-  legacy_compression_method.push_back(1);
   legacy_compression_method.push_back(0);
 
   std::vector<uint8_t> data;
@@ -81,18 +82,21 @@ void tls_handshake_client::send_client_hello()
   std::vector<Extension> extention;
   extention.push_back(ext); 
 
-  HandshakePayload unghhhh;
-  unghhhh.legacy_version              = 0x0303; // i dont like casting
-  unghhhh.random                      = rand;
-  unghhhh.legacy_session_id           = legacy_compression_method; // should be set by Server
-  unghhhh.cipher_suites               = cipher_suites;
-  unghhhh.legacy_compression_methods  = legacy_compression_method;
-  unghhhh.extentions                  = extention;
+  HandshakePayload _client_hello;
+  _client_hello.legacy_version              = 0x0303; // i dont like casting
+  _client_hello.random                      = rand;
+  _client_hello.legacy_session_id           = legacy_session_id; // should be set by Server
+  _client_hello.cipher_suites               = cipher_suites;
+  _client_hello.legacy_compression_methods  = legacy_compression_method;
+  //_client_hello.extentions                  = extention;
+
+  handshake_message_header header;
+  header.msg_type = CLIENT_HELLO;
 
   std::vector<uint8_t> payload;
-  payload.resize(sizeof(unghhhh));
+  payload.resize(sizeof(_client_hello));
 
-  memcpy(payload.data(), &unghhhh, sizeof(unghhhh));
+  memcpy(payload.data(), &_client_hello, sizeof(_client_hello));
 
   this->layer_.write(TLS_HANDSHAKE, payload);
 }
