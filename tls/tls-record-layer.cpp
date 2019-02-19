@@ -156,15 +156,16 @@ bool tls_record_layer::encrypt(content_type type, const std::vector<uint8_t>& fr
                                tls13_cipher::record& record)
 {
   /// \todo encrypt the message
-  if(!current_write_state.cipher) {
-    record = tls13_cipher::record();
-
-    record.header = (record_layer_header){type, TLSv1_2, (uint16_t)fragment.size()};
+  if (security_params.bulk_cipher == security_parameters::bulk_cipher_algorithm::BULK_CIPHER_NULL) {
+    record.header = {type, {TLSv1_2_MAJOR, TLSv1_2_MINOR}, (uint16_t) fragment.size()};
     record.ciphertext = fragment;
-  } else {
-    record = current_write_state.cipher->encrypt(type, fragment);
+    return true;
   }
-  return true;
+  else if(current_write_state.cipher) {
+    record = current_write_state.cipher->encrypt(type, fragment);
+    return true;
+  }
+  return false;
 }
 
 bool tls_record_layer::decrypt(const tls13_cipher::record& record, std::vector<uint8_t>& plaintext,
@@ -172,8 +173,13 @@ bool tls_record_layer::decrypt(const tls13_cipher::record& record, std::vector<u
 {
   /// \todo Decrypt the given record using the current read cipher if set, and extract the plaintext
   /// otherwise.
-  auto dec = current_read_state.cipher->decrypt(record, plaintext, type);
-  return dec;
+  if (current_read_state.cipher) {
+    auto dec = current_read_state.cipher->decrypt(record, plaintext, type);
+    return dec;
+  }
+  plaintext = record.ciphertext;
+  type = record.header.type;
+  return true;
 }
 
 alert_location tls_record_layer::decode_alert(const std::vector<uint8_t>& content) const
