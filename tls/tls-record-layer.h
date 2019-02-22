@@ -82,6 +82,7 @@ public:
   bool set_supported_cipher_suites(const cipher_suites& cs);
   /// Returns the list of supported cipher suites and their order of preference.
   const cipher_suites& get_supported_cipher_suites() const;
+  std::vector<uint8_t> binder;
 
 private:
   static bool decode_header(record_layer_header& header, const std::vector<uint8_t>& data);

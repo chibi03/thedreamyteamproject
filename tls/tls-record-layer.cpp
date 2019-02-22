@@ -159,12 +159,14 @@ bool tls_record_layer::encrypt(content_type type, const std::vector<uint8_t>& fr
   if (security_params.bulk_cipher == security_parameters::bulk_cipher_algorithm::BULK_CIPHER_NULL) {
     record.header = {type, {TLSv1_2_MAJOR, TLSv1_2_MINOR}, (uint16_t) fragment.size()};
     record.ciphertext = fragment;
+
     return true;
   }
-  else if(current_write_state.cipher) {
+  else if (current_write_state.cipher) {
     record = current_write_state.cipher->encrypt(type, fragment);
     return true;
   }
+
   return false;
 }
 
@@ -173,10 +175,10 @@ bool tls_record_layer::decrypt(const tls13_cipher::record& record, std::vector<u
 {
   /// \todo Decrypt the given record using the current read cipher if set, and extract the plaintext
   /// otherwise.
-  if (current_read_state.cipher) {
-    auto dec = current_read_state.cipher->decrypt(record, plaintext, type);
-    return dec;
+if (current_read_state.cipher) {
+    return current_read_state.cipher->decrypt(record, plaintext, type);
   }
+
   plaintext = record.ciphertext;
   type = record.header.type;
   return true;
@@ -310,7 +312,7 @@ std::vector<uint8_t> tls_record_layer::compute_early_secrets(const std::vector<u
   std::vector <uint8_t> zerosalt (32);
   hkdf myhkdf(zerosalt, psk);
   e_secret = myhkdf.derive_secret("derived", {});
-
+  binder = myhkdf.derive_secret("ext binder", {});
   return e_secret;
 }
 

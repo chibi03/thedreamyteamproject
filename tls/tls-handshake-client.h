@@ -8,6 +8,7 @@
 #include "ecdh.h"
 #include "tls-record-layer.h"
 #include "tls.h"
+#include "hmac-sha2.h"
 
 /// The client-side of the handshake protocol implementation.
 class tls_handshake_client
@@ -25,7 +26,6 @@ public:
 private:
   void send_client_hello();
   alert_location read_server_hello();
-  alert_location read_server_hello_done();
   void send_finished();
   alert_location read_finished();
 
@@ -43,8 +43,31 @@ private:
   /// Selected identities.
   std::vector<std::string> psk_identities_;
 
-  HandshakePayload h_payload_;
+  std::vector<uint8_t> pld_calc();
+  std::vector<uint8_t> ext_calc();
+  void psk_calc(uint16_t &pre_key_size, std::vector<uint8_t> &pre_shared_key_vec);
+  std::vector<uint8_t> expand(std::vector<uint8_t> pld, uint8_t *exp, uint16_t size, bool);
+  void params_from_server(std::vector<uint8_t> server_hello);
+  std::vector<uint8_t> con_message();
+  hmac_sha2::digest_storage verify(std::vector<uint8_t> &messages, std::vector<uint8_t> &finished_key);
 
+  HandshakePayload client_pld;
+  std::vector<uint8_t> hello_client;
+  random_struct random_data;
+  handshake_message_header header;
+
+  std::vector<uint8_t> pld; //client payload
+  std::vector<uint8_t> exts; //client extensions
+
+  std::vector<uint8_t> server_hello;
+  std::vector<uint8_t> server_hello_;
+  std::vector<uint8_t> server_header;
+
+  std::vector<uint8_t> finished_server;
+  cipher_suite server_cipher;
+  std::vector<uint8_t> server_psk;
+  std::vector<uint8_t> ecdh_shared_secret_;
+  std::vector<uint8_t> server_key_share_;
 };
 
 #endif // TLS_HANDSHAKE_CLIENT_H
